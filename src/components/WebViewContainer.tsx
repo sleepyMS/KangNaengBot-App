@@ -2,14 +2,8 @@
  * WebView Container Component
  * 기존 웹앱을 로드하고 네이티브 브릿지 통신을 처리합니다.
  */
-import React, { useRef, useCallback, useState } from 'react';
-import {
-  StyleSheet,
-  BackHandler,
-  Platform,
-  ActivityIndicator,
-  View,
-} from 'react-native';
+import React, { useRef, useCallback } from 'react';
+import { StyleSheet, BackHandler, Platform, View } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -22,31 +16,64 @@ interface BridgeMessage {
 }
 
 interface WebViewContainerProps {
+  accessToken?: string;
   onScheduleSaved?: (schedule: unknown) => void;
   onLogout?: () => void;
 }
 
 export const WebViewContainer: React.FC<WebViewContainerProps> = ({
+  accessToken,
   onScheduleSaved,
   onLogout,
 }) => {
   const webViewRef = useRef<WebView>(null);
-  const [canGoBack, setCanGoBack] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [canGoBack, setCanGoBack] = React.useState(false);
   const insets = useSafeAreaInsets();
 
-  // Safe Area 및 앱 환경 정보 주입
+  // Safe Area 및 앱 환경 정보 주입 + 토큰 주입
   const injectedJavaScript = `
     (function() {
       // Safe Area 값 주입
-      document.documentElement.style.setProperty('--safe-area-inset-top', '${insets.top}px');
-      document.documentElement.style.setProperty('--safe-area-inset-bottom', '${insets.bottom}px');
-      document.documentElement.style.setProperty('--safe-area-inset-left', '${insets.left}px');
-      document.documentElement.style.setProperty('--safe-area-inset-right', '${insets.right}px');
+      document.documentElement.style.setProperty('--safe-area-inset-top', '${
+        insets.top
+      }px');
+      document.documentElement.style.setProperty('--safe-area-inset-bottom', '${
+        insets.bottom
+      }px');
+      document.documentElement.style.setProperty('--safe-area-inset-left', '${
+        insets.left
+      }px');
+      document.documentElement.style.setProperty('--safe-area-inset-right', '${
+        insets.right
+      }px');
       
       // 앱 환경 표시
       window.IS_NATIVE_APP = true;
       window.PLATFORM = '${Platform.OS}';
+      
+      // 네이티브에서 받은 토큰 주입 (자동 로그인)
+      ${
+        accessToken
+          ? `
+      localStorage.setItem('access_token', '${accessToken}');
+      // auth-storage도 업데이트 (Zustand persist용)
+      const authStorage = localStorage.getItem('auth-storage');
+      if (authStorage) {
+        try {
+          const data = JSON.parse(authStorage);
+          data.state = data.state || {};
+          data.state.isAuthenticated = true;
+          localStorage.setItem('auth-storage', JSON.stringify(data));
+        } catch (e) {}
+      } else {
+        localStorage.setItem('auth-storage', JSON.stringify({
+          state: { isAuthenticated: true },
+          version: 0
+        }));
+      }
+      `
+          : ''
+      }
       
       // 네이티브 메시지 수신 리스너
       window.addEventListener('nativeMessage', function(e) {
@@ -103,11 +130,6 @@ export const WebViewContainer: React.FC<WebViewContainerProps> = ({
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {isLoading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6366f1" />
-        </View>
-      )}
       <WebView
         ref={webViewRef}
         source={{ uri: WEB_APP_URL }}
@@ -120,13 +142,14 @@ export const WebViewContainer: React.FC<WebViewContainerProps> = ({
         onMessage={handleMessage}
         // 네비게이션 상태
         onNavigationStateChange={navState => setCanGoBack(navState.canGoBack)}
-        // 로딩 상태
-        onLoadStart={() => setIsLoading(true)}
-        onLoadEnd={() => setIsLoading(false)}
         // Android 전용 설정
         allowsBackForwardNavigationGestures={true}
         sharedCookiesEnabled={true}
         thirdPartyCookiesEnabled={true}
+        // 네트워크/CORS 설정
+        mixedContentMode="always"
+        originWhitelist={['*']}
+        allowUniversalAccessFromFileURLs={true}
         // 캐시 설정
         cacheEnabled={true}
         // User Agent에 앱 식별자 추가
@@ -135,6 +158,14 @@ export const WebViewContainer: React.FC<WebViewContainerProps> = ({
         onError={syntheticEvent => {
           const { nativeEvent } = syntheticEvent;
           console.warn('[WebView] Error:', nativeEvent);
+        }}
+        onHttpError={syntheticEvent => {
+          const { nativeEvent } = syntheticEvent;
+          console.warn(
+            '[WebView] HTTP Error:',
+            nativeEvent.statusCode,
+            nativeEvent.url,
+          );
         }}
       />
     </View>
@@ -148,12 +179,5 @@ const styles = StyleSheet.create({
   },
   webview: {
     flex: 1,
-  },
-  loadingContainer: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#0f172a',
-    zIndex: 1,
   },
 });

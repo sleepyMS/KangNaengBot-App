@@ -3,9 +3,15 @@
  */
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { WebViewContainer } from '../components/WebViewContainer';
+import { RootStackParamList } from '../../App';
 
-export const MainScreen: React.FC = () => {
+type Props = NativeStackScreenProps<RootStackParamList, 'Main'>;
+
+export const MainScreen: React.FC<Props> = ({ route }) => {
+  const { accessToken } = route.params ?? {};
+
   const handleScheduleSaved = (schedule: unknown) => {
     console.log('[MainScreen] Schedule saved:', schedule);
     // TODO: 위젯 데이터 업데이트
@@ -21,6 +27,7 @@ export const MainScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <WebViewContainer
+        accessToken={accessToken}
         onScheduleSaved={handleScheduleSaved}
         onLogout={handleLogout}
       />
