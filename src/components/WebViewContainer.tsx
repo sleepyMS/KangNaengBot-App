@@ -14,7 +14,7 @@ import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 
-const WEB_APP_URL = 'https://kangnaengbot.vercel.app';
+const WEB_APP_URL = 'https://kangnaeng.com';
 
 interface BridgeMessage {
   type: string;
