@@ -57,9 +57,7 @@
   1.  `npx react-native start`가 켜져 있는지 확인
   2.  새 터미널에서 포트 연결 명령어 실행:
       ```powershell
-      # adb가 PATH에 없으면 아래처럼 풀 경로로 실행
-      $env:ANDROID_HOME = "$env:LOCALAPPDATA\Android\Sdk"
-      & "$env:ANDROID_HOME\platform-tools\adb.exe" reverse tcp:8081 tcp:8081
+      adb reverse tcp:8081 tcp:8081
       ```
       > 💡 이 명령어는 **폰의 8081 포트**를 **컴퓨터의 8081 포트**에 연결해줍니다.
       > USB 연결이 끊겼거나 폰을 새로 연결했을 때 한 번 실행해주세요.
