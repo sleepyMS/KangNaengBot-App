@@ -1,15 +1,17 @@
 /**
  * 로그인 화면 컴포넌트
- * FE의 LoginPage.tsx UI를 React Native로 재현
+ * SaaS 수준의 UI/UX, 접근성, 에러 핸들링 포함
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
+  Animated,
+  Linking,
+  AccessibilityInfo,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -17,9 +19,14 @@ import {
   configureGoogleSignIn,
   signInWithGoogle,
   authenticateWithBackend,
-  saveTokens,
-  saveUserInfo,
+  saveAuthData,
+  AuthError,
 } from '../services/authService';
+import {
+  useNetworkStatus,
+  checkNetworkConnection,
+} from '../hooks/useNetworkStatus';
+import { useAuthStore } from '../stores/useAuthStore';
 
 interface LoginScreenProps {
   onLoginSuccess: (accessToken: string) => void;
@@ -40,7 +47,7 @@ const KangNaengBotLogo = () => (
   </Svg>
 );
 
-// Google 아이콘 (FE의 인라인 SVG와 동일)
+// Google 아이콘
 const GoogleIcon = () => (
   <Svg width={20} height={20} viewBox="0 0 24 24">
     <Path
@@ -62,20 +69,59 @@ const GoogleIcon = () => (
   </Svg>
 );
 
+// 에러 상태 타입
+interface ErrorState {
+  message: string;
+  isRetryable: boolean;
+}
+
 export const LoginScreen: React.FC<LoginScreenProps> = ({
   onLoginSuccess,
   onGuestMode,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<ErrorState | null>(null);
   const insets = useSafeAreaInsets();
+  const { isOffline } = useNetworkStatus();
+  const setStoreError = useAuthStore(state => state.setError);
 
-  // Google Sign-In 초기화
-  React.useEffect(() => {
+  // 애니메이션
+  const [fadeAnim] = useState(() => new Animated.Value(0));
+  const [slideAnim] = useState(() => new Animated.Value(30));
+
+  useEffect(() => {
+    // Google Sign-In 초기화
     configureGoogleSignIn();
-  }, []);
 
-  const handleGoogleLogin = async () => {
+    // 진입 애니메이션
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
+
+  const handleGoogleLogin = useCallback(async () => {
+    // 오프라인 체크
+    const isOnline = await checkNetworkConnection();
+    if (!isOnline) {
+      setError({
+        message: '인터넷 연결을 확인해주세요.',
+        isRetryable: true,
+      });
+      return;
+    }
+
+    setError(null);
     setIsLoading(true);
+
     try {
       // 1. Google 로그인
       const { userInfo, idToken } = await signInWithGoogle();
@@ -84,43 +130,120 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       const tokens = await authenticateWithBackend(idToken);
 
       // 3. 토큰 및 사용자 정보 저장
-      await saveTokens(tokens);
-      await saveUserInfo(userInfo);
+      await saveAuthData(tokens, userInfo);
 
       // 4. 성공 콜백
       onLoginSuccess(tokens.accessToken);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : '로그인에 실패했습니다.';
-      Alert.alert('로그인 오류', message);
+    } catch (err) {
+      let errorMessage = '로그인에 실패했습니다.';
+      let isRetryable = true;
+
+      if (err instanceof AuthError) {
+        errorMessage = err.message;
+        isRetryable = err.isRetryable;
+
+        // 취소는 에러로 표시하지 않음
+        if (err.code === 'CANCELLED') {
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      setError({ message: errorMessage, isRetryable });
+      setStoreError(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [onLoginSuccess, setStoreError]);
+
+  const handleGuestMode = useCallback(() => {
+    useAuthStore.getState().loginAsGuest();
+    onGuestMode();
+  }, [onGuestMode]);
+
+  const handleRetry = useCallback(() => {
+    setError(null);
+    handleGoogleLogin();
+  }, [handleGoogleLogin]);
+
+  const openPrivacyPolicy = useCallback(() => {
+    Linking.openURL('https://kangnaeng.com/privacy');
+  }, []);
+
+  const openTerms = useCallback(() => {
+    Linking.openURL('https://kangnaeng.com/terms');
+  }, []);
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom + 24 }]}>
+      {/* 오프라인 배너 */}
+      {isOffline && (
+        <View style={styles.offlineBanner}>
+          <Text style={styles.offlineBannerText}>오프라인 상태입니다</Text>
+        </View>
+      )}
+
       {/* 상단 콘텐츠 영역 - 로고 + 서브타이틀 */}
-      <View style={styles.contentArea}>
+      <Animated.View
+        style={[
+          styles.contentArea,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          },
+        ]}
+      >
         <View style={styles.logoContainer}>
           <KangNaengBotLogo />
-          <Text style={styles.subtitle}>
+          <Text
+            style={styles.subtitle}
+            accessibilityRole="header"
+            accessibilityLabel="강냉봇: AI가 만들어주는 나만의 시간표"
+          >
             {'AI가 만들어주는\n나만의 시간표'}
           </Text>
         </View>
-      </View>
+      </Animated.View>
+
+      {/* 에러 메시지 */}
+      {error && (
+        <Animated.View
+          style={[styles.errorContainer, { opacity: fadeAnim }]}
+          accessibilityLiveRegion="polite"
+        >
+          <Text style={styles.errorText}>{error.message}</Text>
+          {error.isRetryable && (
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={handleRetry}
+              accessibilityLabel="다시 시도하기"
+              accessibilityRole="button"
+            >
+              <Text style={styles.retryButtonText}>다시 시도</Text>
+            </TouchableOpacity>
+          )}
+        </Animated.View>
+      )}
 
       {/* 하단 버튼 영역 */}
       <View style={styles.buttonArea}>
         {isLoading ? (
-          <ActivityIndicator size="large" color="#6366f1" />
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#6366f1" />
+            <Text style={styles.loadingText}>로그인 중...</Text>
+          </View>
         ) : (
           <>
             {/* Google 로그인 버튼 */}
             <TouchableOpacity
-              style={styles.googleButton}
+              style={[styles.googleButton, isOffline && styles.buttonDisabled]}
               onPress={handleGoogleLogin}
               activeOpacity={0.8}
+              disabled={isOffline}
+              accessibilityLabel="Google 계정으로 로그인"
+              accessibilityRole="button"
+              accessibilityHint="Google 계정을 사용하여 로그인합니다"
+              accessibilityState={{ disabled: isOffline }}
             >
               <GoogleIcon />
               <Text style={styles.googleButtonText}>Google로 계속하기</Text>
@@ -129,13 +252,35 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             {/* 게스트 모드 버튼 */}
             <TouchableOpacity
               style={styles.guestButton}
-              onPress={onGuestMode}
-              activeOpacity={0.8}
+              onPress={handleGuestMode}
+              activeOpacity={0.7}
+              accessibilityLabel="게스트로 둘러보기"
+              accessibilityRole="button"
+              accessibilityHint="로그인 없이 앱을 둘러봅니다. 일부 기능이 제한됩니다."
             >
               <Text style={styles.guestButtonText}>게스트로 둘러보기</Text>
             </TouchableOpacity>
           </>
         )}
+
+        {/* 약관 링크 */}
+        <View style={styles.legalLinks}>
+          <TouchableOpacity
+            onPress={openTerms}
+            accessibilityRole="link"
+            accessibilityLabel="이용약관 열기"
+          >
+            <Text style={styles.legalLinkText}>이용약관</Text>
+          </TouchableOpacity>
+          <Text style={styles.legalDivider}>•</Text>
+          <TouchableOpacity
+            onPress={openPrivacyPolicy}
+            accessibilityRole="link"
+            accessibilityLabel="개인정보 처리방침 열기"
+          >
+            <Text style={styles.legalLinkText}>개인정보 처리방침</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -144,8 +289,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // FE와 동일한 다크 그라디언트 배경 (RN에서는 단색으로 근사)
     backgroundColor: '#0c1222',
+  },
+  offlineBanner: {
+    backgroundColor: '#dc2626',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  offlineBannerText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '500',
   },
   contentArea: {
     flex: 1,
@@ -164,17 +319,51 @@ const styles = StyleSheet.create({
     marginTop: 16,
     lineHeight: 26,
   },
+  errorContainer: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(220, 38, 38, 0.3)',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#fca5a5',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  retryButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  retryButtonText: {
+    color: '#60a5fa',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   buttonArea: {
     paddingHorizontal: 16,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  loadingText: {
+    color: '#94a3b8',
+    fontSize: 14,
+    marginTop: 12,
   },
   googleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1e293b', // slate-800
+    backgroundColor: '#1e293b',
     paddingVertical: 16,
     paddingHorizontal: 24,
-    borderRadius: 9999, // pill shape
+    borderRadius: 9999,
     marginBottom: 12,
     gap: 12,
     shadowColor: '#000',
@@ -183,18 +372,38 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
   googleButtonText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#e2e8f0', // gray-200
+    color: '#e2e8f0',
   },
   guestButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
+    marginBottom: 8,
   },
   guestButtonText: {
-    fontSize: 14,
-    color: '#94a3b8', // gray-400
+    fontSize: 15,
+    color: '#94a3b8',
+    fontWeight: '500',
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+    gap: 8,
+  },
+  legalLinkText: {
+    color: '#64748b',
+    fontSize: 12,
+  },
+  legalDivider: {
+    color: '#64748b',
+    fontSize: 12,
   },
 });

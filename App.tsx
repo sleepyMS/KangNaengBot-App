@@ -2,14 +2,19 @@
  * KangNaengBot App
  * React Native WebView 앱 - 기존 웹앱을 네이티브 앱으로 래핑
  */
-import React, { useState, useEffect } from 'react';
-import { StatusBar } from 'react-native';
+import React, { useEffect, useCallback } from 'react';
+import { StatusBar, View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { MainScreen } from './src/screens/MainScreen';
 import { LoginScreen } from './src/screens/LoginScreen';
-import { isSignedIn, getAccessToken } from './src/services/authService';
+import { useAuthStore, AuthTokens } from './src/stores/useAuthStore';
+import {
+  initializeAuth,
+  signOut,
+  refreshAccessToken,
+} from './src/services/authService';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -19,51 +24,79 @@ export type RootStackParamList = {
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-const App: React.FC = () => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+// 스플래시/로딩 화면
+const SplashScreen: React.FC = () => (
+  <View style={styles.splashContainer}>
+    <ActivityIndicator size="large" color="#6366f1" />
+  </View>
+);
 
-  // 앱 시작 시 로그인 상태 확인
+const App: React.FC = () => {
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  const isLoading = useAuthStore(state => state.isLoading);
+  const isGuest = useAuthStore(state => state.isGuest);
+  const accessToken = useAuthStore(state => state.accessToken);
+  const setLoading = useAuthStore(state => state.setLoading);
+  const login = useAuthStore(state => state.login);
+  const loginAsGuest = useAuthStore(state => state.loginAsGuest);
+  const logout = useAuthStore(state => state.logout);
+
+  // 앱 시작 시 인증 상태 초기화
   useEffect(() => {
-    const checkAuth = async () => {
+    const initialize = async () => {
       try {
-        const signedIn = await isSignedIn();
-        if (signedIn) {
-          const token = await getAccessToken();
-          setAccessToken(token);
-          setIsAuthenticated(true);
-        }
+        await initializeAuth();
       } catch (error) {
-        console.error('Auth check failed:', error);
-      } finally {
-        setIsLoading(false);
+        console.error('[App] Auth initialization failed:', error);
+        setLoading(false);
       }
     };
 
-    checkAuth();
+    initialize();
+  }, [setLoading]);
+
+  // 로그인 성공 핸들러
+  const handleLoginSuccess = useCallback((token: string) => {
+    // 이미 useAuthStore에서 업데이트됨 (saveAuthData에서)
+    console.log('[App] Login success');
   }, []);
 
-  const handleLoginSuccess = (token: string) => {
-    setAccessToken(token);
-    setIsAuthenticated(true);
-  };
+  // 게스트 모드 핸들러
+  const handleGuestMode = useCallback(() => {
+    loginAsGuest();
+    console.log('[App] Guest mode activated');
+  }, [loginAsGuest]);
 
-  const handleGuestMode = () => {
-    // 게스트 모드: 토큰 없이 WebView로 이동
-    setIsAuthenticated(true);
-  };
+  // 로그아웃 핸들러
+  const handleLogout = useCallback(async () => {
+    try {
+      await signOut();
+      console.log('[App] Logout success');
+    } catch (error) {
+      console.error('[App] Logout error:', error);
+      // 에러가 나도 상태는 초기화
+      logout();
+    }
+  }, [logout]);
 
-  const handleLogout = () => {
-    setAccessToken(null);
-    setIsAuthenticated(false);
-  };
+  // 세션 만료 핸들러 (WebView에서 호출)
+  const handleSessionExpired = useCallback(async () => {
+    console.log('[App] Session expired, attempting refresh...');
 
-  // 로딩 중
+    // 토큰 갱신 시도
+    const newTokens = await refreshAccessToken();
+    if (!newTokens) {
+      // 갱신 실패 → 로그아웃
+      await handleLogout();
+    }
+  }, [handleLogout]);
+
+  // 로딩 중 (스플래시)
   if (isLoading) {
     return (
       <SafeAreaProvider>
         <StatusBar barStyle="light-content" backgroundColor="#0f172a" />
+        <SplashScreen />
       </SafeAreaProvider>
     );
   }
@@ -84,11 +117,17 @@ const App: React.FC = () => {
           }}
         >
           {isAuthenticated ? (
-            <Stack.Screen
-              name="Main"
-              component={MainScreen}
-              initialParams={{ accessToken: accessToken ?? undefined }}
-            />
+            <Stack.Screen name="Main">
+              {props => (
+                <MainScreen
+                  {...props}
+                  accessToken={accessToken}
+                  isGuest={isGuest}
+                  onLogout={handleLogout}
+                  onSessionExpired={handleSessionExpired}
+                />
+              )}
+            </Stack.Screen>
           ) : (
             <Stack.Screen name="Login">
               {() => (
@@ -104,5 +143,14 @@ const App: React.FC = () => {
     </SafeAreaProvider>
   );
 };
+
+const styles = StyleSheet.create({
+  splashContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0f172a',
+  },
+});
 
 export default App;

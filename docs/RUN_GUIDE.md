@@ -73,3 +73,72 @@
   npm install
   npx react-native run-android
   ```
+
+---
+
+## 🔐 Google 로그인 설정 (DEVELOPER_ERROR 해결)
+
+### 문제: `DEVELOPER_ERROR` 발생 시
+
+Google 로그인 시 `DEVELOPER_ERROR`가 발생하는 경우, 다음 단계를 확인하세요.
+
+### 1. SHA-1/SHA-256 인증서 지문 등록 (필수)
+
+**Debug Keystore 지문 확인:**
+
+```powershell
+cd android/app
+keytool -list -v -keystore debug.keystore -alias androiddebugkey -storepass android -keypass android
+```
+
+출력에서 **SHA-1**과 **SHA-256** 값을 복사합니다.
+
+**Google Cloud Console에 등록:**
+
+1. [Google Cloud Console](https://console.cloud.google.com/) 접속
+2. 프로젝트 선택: `kangnam-backend` (또는 해당 프로젝트)
+3. **APIs & Services** > **Credentials** 이동
+4. OAuth 2.0 Client ID 중 **Android** 타입 클라이언트 찾기 (없으면 생성)
+5. **SHA-1**과 **SHA-256** 지문을 추가
+6. **Package name**: `com.kangnaengbotapp` 확인
+
+### 2. Android OAuth Client 확인
+
+Google Cloud Console에서:
+- **OAuth 2.0 Client ID** 목록에 **Android** 타입 클라이언트가 있어야 합니다
+- Package name이 `com.kangnaengbotapp`인지 확인
+- SHA-1/SHA-256이 등록되어 있는지 확인
+
+### 3. google-services.json 업데이트
+
+Google Cloud Console에서:
+1. **Firebase Console** > 프로젝트 선택
+2. **프로젝트 설정** > **일반** 탭
+3. **내 앱** 섹션에서 Android 앱 선택
+4. **google-services.json** 다운로드
+5. `android/app/google-services.json` 파일 교체
+
+### 4. 앱 재빌드
+
+설정 변경 후 반드시 앱을 완전히 재빌드해야 합니다:
+
+```powershell
+cd android
+./gradlew clean
+cd ..
+npx react-native run-android
+```
+
+### 5. 확인 사항 체크리스트
+
+- [ ] `android/build.gradle`에 Google Services 플러그인 클래스패스 추가됨
+- [ ] `android/app/build.gradle`에 `apply plugin: "com.google.gms.google-services"` 추가됨
+- [ ] `google-services.json` 파일이 `android/app/` 폴더에 있음
+- [ ] Google Cloud Console에 SHA-1/SHA-256 지문 등록됨
+- [ ] Android OAuth Client가 생성되어 있고 Package name이 일치함
+- [ ] 앱을 완전히 재빌드함 (clean 후 빌드)
+
+### 참고 링크
+
+- [React Native Google Sign-In 공식 문서](https://react-native-google-signin.github.io/docs/)
+- [Troubleshooting 가이드](https://react-native-google-signin.github.io/docs/troubleshooting)
