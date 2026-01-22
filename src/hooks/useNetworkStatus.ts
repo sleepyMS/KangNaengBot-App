@@ -2,7 +2,7 @@
  * 네트워크 상태 감지 Hook
  * 오프라인 감지 및 연결 복구 시 콜백 지원
  */
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 
 interface NetworkStatus {
@@ -22,34 +22,47 @@ export const useNetworkStatus = (options?: UseNetworkStatusOptions) => {
     isInternetReachable: null,
     type: 'unknown',
   });
-  const [wasDisconnected, setWasDisconnected] = useState(false);
 
-  const handleNetworkChange = useCallback(
-    (state: NetInfoState) => {
+  // refs로 최신 값 추적 (의존성 배열 문제 방지)
+  const wasDisconnectedRef = useRef(false);
+  const prevConnectedRef = useRef(true);
+  const optionsRef = useRef(options);
+
+  // options 업데이트
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
+
+  useEffect(() => {
+    const handleNetworkChange = (state: NetInfoState) => {
       const isConnected = state.isConnected ?? false;
       const isInternetReachable = state.isInternetReachable;
 
       // 연결 복구 감지
-      if (wasDisconnected && isConnected && isInternetReachable !== false) {
-        options?.onReconnect?.();
+      if (
+        wasDisconnectedRef.current &&
+        isConnected &&
+        isInternetReachable !== false
+      ) {
+        optionsRef.current?.onReconnect?.();
+        wasDisconnectedRef.current = false;
       }
 
       // 연결 끊김 감지
-      if (!isConnected && status.isConnected) {
-        options?.onDisconnect?.();
-        setWasDisconnected(true);
+      if (!isConnected && prevConnectedRef.current) {
+        optionsRef.current?.onDisconnect?.();
+        wasDisconnectedRef.current = true;
       }
+
+      prevConnectedRef.current = isConnected;
 
       setStatus({
         isConnected,
         isInternetReachable,
         type: state.type,
       });
-    },
-    [wasDisconnected, status.isConnected, options],
-  );
+    };
 
-  useEffect(() => {
     // 초기 상태 확인
     NetInfo.fetch().then(handleNetworkChange);
 
@@ -57,7 +70,7 @@ export const useNetworkStatus = (options?: UseNetworkStatusOptions) => {
     const unsubscribe = NetInfo.addEventListener(handleNetworkChange);
 
     return () => unsubscribe();
-  }, [handleNetworkChange]);
+  }, []); // 빈 의존성 배열 - 한 번만 구독
 
   const isOffline = !status.isConnected || status.isInternetReachable === false;
 

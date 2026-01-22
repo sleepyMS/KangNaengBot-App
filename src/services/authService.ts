@@ -185,9 +185,9 @@ const getTokenExpiry = (token: string): number | null => {
 
 /**
  * 백엔드에 Google ID Token을 보내고 Access/Refresh Token 받기
- * 
+ *
  * API 명세: docs/MOBILE_AUTH_API_SPEC.md 참조
- * 
+ *
  * @param idToken Google Sign-In SDK에서 받은 ID Token (JWT)
  * @returns Access Token과 Refresh Token
  * @throws {AuthError} 인증 실패 시
@@ -261,7 +261,8 @@ export const authenticateWithBackend = async (
           );
         case 401:
           throw new AuthError(
-            errorMessage || 'ID Token 검증에 실패했습니다. 다시 로그인해주세요.',
+            errorMessage ||
+              'ID Token 검증에 실패했습니다. 다시 로그인해주세요.',
             'HTTP_401',
             false,
           );
@@ -287,7 +288,8 @@ export const authenticateWithBackend = async (
         case 502:
         case 503:
           throw new AuthError(
-            errorMessage || '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+            errorMessage ||
+              '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
             `HTTP_${status}`,
             true, // 재시도 가능
           );
@@ -469,12 +471,20 @@ export const initializeAuth = async (): Promise<{
   const store = useAuthStore.getState();
 
   try {
+    // 게스트 모드는 persist하지 않음 - 앱 재시작 시 로그인 화면 표시
+    if (store.isGuest) {
+      console.log('[Auth] Guest mode detected, clearing for fresh start');
+      store.logout();
+      return { isAuthenticated: false, tokens: null, user: null };
+    }
+
     // 저장된 토큰 로드
     const tokens = await loadTokensFromStorage();
     const user = await getUserInfo();
 
     if (!tokens || !tokens.accessToken) {
-      store.setLoading(false);
+      // 토큰 없음 - persist된 isAuthenticated 상태도 초기화
+      store.logout();
       return { isAuthenticated: false, tokens: null, user: null };
     }
 
