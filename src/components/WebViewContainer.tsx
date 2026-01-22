@@ -30,9 +30,18 @@ interface BridgeMessage {
   payload?: unknown;
 }
 
+// 유저 정보 타입 (RN useAuthStore와 동일)
+interface UserInfo {
+  id: string;
+  email: string;
+  name: string;
+  photo?: string;
+}
+
 interface WebViewContainerProps {
   accessToken: string | null;
   isGuest?: boolean;
+  userInfo?: UserInfo | null;
   onScheduleSaved?: (schedule: unknown) => void;
   onLogout?: () => void;
   onSessionExpired?: () => void;
@@ -53,6 +62,7 @@ export const WebViewContainer = forwardRef<
     {
       accessToken,
       isGuest = false,
+      userInfo,
       onScheduleSaved,
       onLogout,
       onSessionExpired,
@@ -89,10 +99,12 @@ export const WebViewContainer = forwardRef<
               localStorage.setItem('auth-storage', JSON.stringify(data));
             } catch (e) {}
           }
-          // 앱에 토큰 갱신 알림
-          window.dispatchEvent(new CustomEvent('nativeTokenRefreshed', { detail: { token: '${escapeJsString(
-            token,
-          )}' } }));
+          // 앱에 토큰 갱신 알림 (Race Condition 방지를 위해 지연 발송)
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('nativeTokenRefreshed', { detail: { token: '${escapeJsString(
+              token,
+            )}' } }));
+          }, 100);
           true;
         })();
       `;
@@ -125,23 +137,51 @@ export const WebViewContainer = forwardRef<
 
     // Safe Area 및 앱 환경 정보 주입 + 토큰 주입
     const injectedJavaScript = React.useMemo(() => {
+      // FE User 타입에 맞게 변환 (photo -> picture)
+      const userForFE = userInfo
+        ? {
+            id: userInfo.id,
+            email: userInfo.email,
+            name: userInfo.name,
+            picture: userInfo.photo,
+          }
+        : null;
+
       const tokenInjection = accessToken
         ? `
       localStorage.setItem('access_token', '${escapeJsString(accessToken)}');
       const authStorage = localStorage.getItem('auth-storage');
+      const userFromNative = ${userForFE ? JSON.stringify(userForFE) : 'null'};
+      
       if (authStorage) {
         try {
           const data = JSON.parse(authStorage);
           data.state = data.state || {};
           data.state.isAuthenticated = true;
+          if (userFromNative) {
+            data.state.user = userFromNative;
+          }
           localStorage.setItem('auth-storage', JSON.stringify(data));
         } catch (e) {}
       } else {
         localStorage.setItem('auth-storage', JSON.stringify({
-          state: { isAuthenticated: true },
+          state: { 
+            isAuthenticated: true,
+            user: userFromNative,
+          },
           version: 0
         }));
       }
+      
+      // 앱에 토큰 갱신 알림 (userInfo 포함하여 즉시 UI 업데이트)
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('nativeTokenRefreshed', { 
+          detail: { 
+            token: '${escapeJsString(accessToken)}',
+            userInfo: userFromNative
+          } 
+        }));
+      }, 500);
       `
         : '';
 

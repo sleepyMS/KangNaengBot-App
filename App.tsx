@@ -36,6 +36,7 @@ const App: React.FC = () => {
   const isLoading = useAuthStore(state => state.isLoading);
   const isGuest = useAuthStore(state => state.isGuest);
   const accessToken = useAuthStore(state => state.accessToken);
+  const user = useAuthStore(state => state.user);
   const setLoading = useAuthStore(state => state.setLoading);
   const login = useAuthStore(state => state.login);
   const loginAsGuest = useAuthStore(state => state.loginAsGuest);
@@ -131,6 +132,7 @@ const App: React.FC = () => {
                   {...props}
                   accessToken={accessToken}
                   isGuest={isGuest}
+                  userInfo={user}
                   onLogout={handleLogout}
                   onSessionExpired={handleSessionExpired}
                   onRequestLogin={handleRequestLogin}

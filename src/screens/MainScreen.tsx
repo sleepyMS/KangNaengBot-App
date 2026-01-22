@@ -7,10 +7,12 @@ import {
   WebViewContainer,
   WebViewContainerRef,
 } from '../components/WebViewContainer';
+import type { UserInfo } from '../stores/useAuthStore';
 
 interface MainScreenProps {
   accessToken: string | null;
   isGuest: boolean;
+  userInfo: UserInfo | null;
   onLogout: () => Promise<void>;
   onSessionExpired: () => Promise<void>;
   onRequestLogin?: () => void; // 게스트 모드에서 로그인 요청
@@ -19,6 +21,7 @@ interface MainScreenProps {
 export const MainScreen: React.FC<MainScreenProps> = ({
   accessToken,
   isGuest,
+  userInfo,
   onLogout,
   onSessionExpired,
   onRequestLogin,
@@ -52,6 +55,7 @@ export const MainScreen: React.FC<MainScreenProps> = ({
         ref={webViewRef}
         accessToken={accessToken}
         isGuest={isGuest}
+        userInfo={userInfo}
         onScheduleSaved={handleScheduleSaved}
         onLogout={handleLogout}
         onSessionExpired={handleSessionExpired}
