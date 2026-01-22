@@ -253,6 +253,57 @@ export const WebViewContainer = forwardRef<
     `;
     }, [isGuest, colorScheme]);
 
+    // 토큰 또는 유저 정보 변경 시 런타임 자동 주입 (Prop 변경 감지)
+    React.useEffect(() => {
+      if (!accessToken || !webViewRef.current) return;
+
+      const userForFE = userInfo
+        ? {
+            id: userInfo.id,
+            email: userInfo.email,
+            name: userInfo.name,
+            picture: userInfo.photo,
+          }
+        : null;
+
+      const script = `
+        (function() {
+          localStorage.setItem('access_token', '${escapeJsString(
+            accessToken,
+          )}');
+          const authStorage = localStorage.getItem('auth-storage');
+          const userFromNative = ${
+            userForFE ? JSON.stringify(userForFE) : 'null'
+          };
+          
+          if (authStorage) {
+            try {
+              const data = JSON.parse(authStorage);
+              data.state = data.state || {};
+              data.state.isAuthenticated = true;
+              if (userFromNative) {
+                data.state.user = userFromNative;
+              }
+              localStorage.setItem('auth-storage', JSON.stringify(data));
+            } catch (e) {}
+          }
+          
+          // 앱에 토큰 갱신 알림
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('nativeTokenRefreshed', { 
+              detail: { 
+                token: '${escapeJsString(accessToken)}',
+                userInfo: userFromNative
+              } 
+            }));
+          }, 100);
+          true;
+        })();
+      `;
+
+      webViewRef.current.injectJavaScript(script);
+    }, [accessToken, userInfo]);
+
     // 네이티브 메시지 수신 처리
     const handleMessage = useCallback(
       (event: WebViewMessageEvent) => {

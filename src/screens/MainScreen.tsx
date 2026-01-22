@@ -44,11 +44,6 @@ export const MainScreen: React.FC<MainScreenProps> = ({
     await onSessionExpired();
   }, [onSessionExpired]);
 
-  // 토큰 갱신 시 WebView에 새 토큰 주입
-  const handleTokenRefreshed = useCallback((newToken: string) => {
-    webViewRef.current?.injectToken(newToken);
-  }, []);
-
   return (
     <View style={styles.container}>
       <WebViewContainer
