@@ -4,7 +4,7 @@
  */
 import React, { useEffect, useCallback } from 'react';
 import { StatusBar, View, ActivityIndicator, StyleSheet } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, Theme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { MainScreen } from './src/screens/MainScreen';
@@ -23,6 +23,25 @@ export type RootStackParamList = {
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+// 네비게이션 다크 테마 (화면 전환 시 흰색 깜빡임 방지)
+const DarkNavigationTheme: Theme = {
+  dark: true,
+  colors: {
+    primary: '#6366f1',
+    background: '#0f172a',
+    card: '#1e293b',
+    text: '#f1f5f9',
+    border: '#334155',
+    notification: '#6366f1',
+  },
+  fonts: {
+    regular: { fontFamily: 'System', fontWeight: '400' },
+    medium: { fontFamily: 'System', fontWeight: '500' },
+    bold: { fontFamily: 'System', fontWeight: '700' },
+    heavy: { fontFamily: 'System', fontWeight: '900' },
+  },
+};
 
 // 스플래시/로딩 화면
 const SplashScreen: React.FC = () => (
@@ -111,46 +130,48 @@ const App: React.FC = () => {
   }
 
   return (
-    <SafeAreaProvider>
-      <NavigationContainer>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor="#0f172a"
-          translucent={false}
-        />
-        <Stack.Navigator
-          screenOptions={{
-            headerShown: false,
-            animation: 'slide_from_right',
-            contentStyle: { backgroundColor: '#0f172a' },
-          }}
-        >
-          {isAuthenticated ? (
-            <Stack.Screen name="Main">
-              {props => (
-                <MainScreen
-                  {...props}
-                  accessToken={accessToken}
-                  isGuest={isGuest}
-                  userInfo={user}
-                  onLogout={handleLogout}
-                  onSessionExpired={handleSessionExpired}
-                  onRequestLogin={handleRequestLogin}
-                />
-              )}
-            </Stack.Screen>
-          ) : (
-            <Stack.Screen name="Login">
-              {() => (
-                <LoginScreen
-                  onLoginSuccess={handleLoginSuccess}
-                  onGuestMode={handleGuestMode}
-                />
-              )}
-            </Stack.Screen>
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
+    <SafeAreaProvider style={{ backgroundColor: '#0f172a' }}>
+      <View style={styles.appContainer}>
+        <NavigationContainer theme={DarkNavigationTheme}>
+          <StatusBar
+            barStyle="light-content"
+            backgroundColor="#0f172a"
+            translucent={false}
+          />
+          <Stack.Navigator
+            screenOptions={{
+              headerShown: false,
+              animation: 'fade', // 인증 상태 전환에 적합한 페이드 애니메이션
+              contentStyle: { backgroundColor: '#0f172a' },
+            }}
+          >
+            {isAuthenticated ? (
+              <Stack.Screen name="Main">
+                {props => (
+                  <MainScreen
+                    {...props}
+                    accessToken={accessToken}
+                    isGuest={isGuest}
+                    userInfo={user}
+                    onLogout={handleLogout}
+                    onSessionExpired={handleSessionExpired}
+                    onRequestLogin={handleRequestLogin}
+                  />
+                )}
+              </Stack.Screen>
+            ) : (
+              <Stack.Screen name="Login">
+                {() => (
+                  <LoginScreen
+                    onLoginSuccess={handleLoginSuccess}
+                    onGuestMode={handleGuestMode}
+                  />
+                )}
+              </Stack.Screen>
+            )}
+          </Stack.Navigator>
+        </NavigationContainer>
+      </View>
     </SafeAreaProvider>
   );
 };
@@ -160,6 +181,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#0f172a',
+  },
+  appContainer: {
+    flex: 1,
     backgroundColor: '#0f172a',
   },
 });

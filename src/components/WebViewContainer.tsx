@@ -18,6 +18,7 @@ import {
   TouchableOpacity,
   useColorScheme,
   NativeModules,
+  ActivityIndicator,
 } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -418,7 +419,7 @@ export const WebViewContainer = forwardRef<
           startInLoadingState={true}
           renderLoading={() => (
             <View style={styles.loadingContainer}>
-              <Text style={styles.loadingText}>로딩 중...</Text>
+              <ActivityIndicator size="large" color="#6366f1" />
             </View>
           )}
         />
@@ -436,6 +437,7 @@ const styles = StyleSheet.create({
   },
   webview: {
     flex: 1,
+    backgroundColor: '#0f172a',
   },
   loadingContainer: {
     position: 'absolute',
