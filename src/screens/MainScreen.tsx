@@ -13,6 +13,7 @@ interface MainScreenProps {
   isGuest: boolean;
   onLogout: () => Promise<void>;
   onSessionExpired: () => Promise<void>;
+  onRequestLogin?: () => void; // 게스트 모드에서 로그인 요청
 }
 
 export const MainScreen: React.FC<MainScreenProps> = ({
@@ -20,6 +21,7 @@ export const MainScreen: React.FC<MainScreenProps> = ({
   isGuest,
   onLogout,
   onSessionExpired,
+  onRequestLogin,
 }) => {
   const webViewRef = useRef<WebViewContainerRef>(null);
 
@@ -53,6 +55,7 @@ export const MainScreen: React.FC<MainScreenProps> = ({
         onScheduleSaved={handleScheduleSaved}
         onLogout={handleLogout}
         onSessionExpired={handleSessionExpired}
+        onRequestLogin={onRequestLogin}
       />
     </View>
   );

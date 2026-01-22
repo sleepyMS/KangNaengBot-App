@@ -91,6 +91,14 @@ const App: React.FC = () => {
     }
   }, [handleLogout]);
 
+  // 게스트 모드에서 로그인 요청 핸들러 (WebView에서 로그인 버튼 클릭 시)
+  const handleRequestLogin = useCallback(() => {
+    console.log(
+      '[App] Login requested from WebView, switching to login screen',
+    );
+    logout(); // 게스트 상태 초기화 → 로그인 화면 표시
+  }, [logout]);
+
   // 로딩 중 (스플래시)
   if (isLoading) {
     return (
@@ -125,6 +133,7 @@ const App: React.FC = () => {
                   isGuest={isGuest}
                   onLogout={handleLogout}
                   onSessionExpired={handleSessionExpired}
+                  onRequestLogin={handleRequestLogin}
                 />
               )}
             </Stack.Screen>

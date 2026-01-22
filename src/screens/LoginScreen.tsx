@@ -1,6 +1,6 @@
 /**
  * 로그인 화면 컴포넌트
- * SaaS 수준의 UI/UX, 접근성, 에러 핸들링 포함
+ * FE 디자인과 통일된 UI, 시스템 테마 지원
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -11,9 +11,9 @@ import {
   ActivityIndicator,
   Animated,
   Linking,
-  AccessibilityInfo,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import {
   configureGoogleSignIn,
@@ -32,20 +32,6 @@ interface LoginScreenProps {
   onLoginSuccess: (accessToken: string) => void;
   onGuestMode: () => void;
 }
-
-// 강냉봇 로고 (logo.svg를 컴포넌트로)
-const KangNaengBotLogo = () => (
-  <Svg width={120} height={120} viewBox="0 0 172 172" fill="none">
-    <Path
-      d="M91.7715 121V49.656H138.934C142.865 49.656 146.162 50.1556 148.827 51.1548C151.491 52.0874 153.59 53.3864 155.122 55.0518C156.721 56.6505 157.82 58.5157 158.419 60.6474C159.085 62.7124 159.418 64.9773 159.418 67.442C159.418 69.8402 159.119 71.9052 158.519 73.6372C157.92 75.3692 157.12 76.8014 156.121 77.9338C155.188 78.9996 154.189 79.8656 153.123 80.5318C152.124 81.1313 150.992 81.7308 149.726 82.3304C151.325 82.7967 152.857 83.4295 154.322 84.2289C155.788 85.0282 157.153 86.1274 158.419 87.5263C159.685 88.8586 160.717 90.5572 161.517 92.6223C162.316 94.6873 162.716 97.1521 162.716 100.016C162.716 102.281 162.316 104.613 161.517 107.011C160.717 109.342 159.385 111.574 157.52 113.706C155.721 115.837 153.223 117.603 150.026 119.002C146.828 120.334 142.965 121 138.435 121H91.7715ZM106.76 60.8472V78.6333H134.738C136.003 78.6333 137.169 78.5333 138.235 78.3335C139.301 78.067 140.3 77.634 141.233 77.0345C142.232 76.435 142.998 75.5357 143.531 74.3366C144.13 73.071 144.43 71.4722 144.43 69.5404C144.43 66.5428 143.464 64.3445 141.532 62.9456C139.601 61.5467 136.47 60.8472 132.14 60.8472H106.76ZM106.76 89.2249V109.809H133.639C135.57 109.809 137.302 109.676 138.835 109.409C140.367 109.143 141.766 108.643 143.031 107.91C144.297 107.178 145.296 106.112 146.029 104.713C146.762 103.314 147.128 101.515 147.128 99.317C147.128 96.1195 146.096 93.6548 144.03 91.9228C141.965 90.1242 139.234 89.2249 135.837 89.2249H106.76Z"
-      fill="#F1F5F9"
-    />
-    <Path
-      d="M8.27923 81.8309V121H17.0723L19.1707 111.707C22.1017 115.238 25.9653 118.003 30.7616 120.001C35.5578 121.999 40.7537 122.999 46.3493 122.999C53.6103 122.999 59.9387 122.033 65.3344 120.101C70.6636 118.102 75.0268 115.371 78.4242 111.907C81.8215 108.377 84.3195 104.38 85.9183 99.9167C87.517 95.3869 88.3164 90.5241 88.3164 85.3281C88.3164 80.1322 87.4837 75.2694 85.8184 70.7396C84.153 66.2098 81.6217 62.213 78.2243 58.749C74.827 55.2851 70.4971 52.5872 65.2345 50.6554C59.972 48.6569 53.8102 47.6577 46.749 47.6577C41.4865 47.6577 36.657 48.2906 32.2604 49.5562C27.7972 50.8219 23.9669 52.5872 20.7694 54.8521C17.5053 57.117 14.9407 59.7815 13.0755 62.8458C11.1436 65.8434 9.9779 69.1075 9.57821 72.6381H25.7655C27.0312 68.0417 29.6291 64.6111 33.5594 62.3462C37.423 60.0147 41.9528 58.8489 47.1487 58.8489C51.6119 58.8489 55.5088 59.5151 58.8395 60.8474C62.1036 62.113 64.7682 63.9449 66.8333 66.343C68.8317 68.7412 70.3305 71.6056 71.3297 74.9363C72.2623 78.2004 72.7286 81.8309 72.7286 85.8278C72.7286 90.3575 72.0625 94.3211 70.7302 97.7184C69.3979 101.049 67.566 103.747 65.2345 105.812C62.903 107.877 60.2718 109.409 57.3407 110.408C54.3431 111.341 51.2122 111.807 47.9481 111.807C40.5539 111.807 34.925 110.209 31.0614 107.011C27.1311 103.814 24.5331 99.1506 23.2675 93.0221H43.4516V81.8309H8.27923Z"
-      fill="#F1F5F9"
-    />
-  </Svg>
-);
 
 // Google 아이콘
 const GoogleIcon = () => (
@@ -69,11 +55,49 @@ const GoogleIcon = () => (
   </Svg>
 );
 
+// 강냉봇 로고 (테마 색상 지원)
+const KangNaengBotLogo = ({ color }: { color: string }) => (
+  <Svg width={100} height={100} viewBox="0 0 172 172" fill="none">
+    <Path
+      d="M91.7715 121V49.656H138.934C142.865 49.656 146.162 50.1556 148.827 51.1548C151.491 52.0874 153.59 53.3864 155.122 55.0518C156.721 56.6505 157.82 58.5157 158.419 60.6474C159.085 62.7124 159.418 64.9773 159.418 67.442C159.418 69.8402 159.119 71.9052 158.519 73.6372C157.92 75.3692 157.12 76.8014 156.121 77.9338C155.188 78.9996 154.189 79.8656 153.123 80.5318C152.124 81.1313 150.992 81.7308 149.726 82.3304C151.325 82.7967 152.857 83.4295 154.322 84.2289C155.788 85.0282 157.153 86.1274 158.419 87.5263C159.685 88.8586 160.717 90.5572 161.517 92.6223C162.316 94.6873 162.716 97.1521 162.716 100.016C162.716 102.281 162.316 104.613 161.517 107.011C160.717 109.342 159.385 111.574 157.52 113.706C155.721 115.837 153.223 117.603 150.026 119.002C146.828 120.334 142.965 121 138.435 121H91.7715ZM106.76 60.8472V78.6333H134.738C136.003 78.6333 137.169 78.5333 138.235 78.3335C139.301 78.067 140.3 77.634 141.233 77.0345C142.232 76.435 142.998 75.5357 143.531 74.3366C144.13 73.071 144.43 71.4722 144.43 69.5404C144.43 66.5428 143.464 64.3445 141.532 62.9456C139.601 61.5467 136.47 60.8472 132.14 60.8472H106.76ZM106.76 89.2249V109.809H133.639C135.57 109.809 137.302 109.676 138.835 109.409C140.367 109.143 141.766 108.643 143.031 107.91C144.297 107.178 145.296 106.112 146.029 104.713C146.762 103.314 147.128 101.515 147.128 99.317C147.128 96.1195 146.096 93.6548 144.03 91.9228C141.965 90.1242 139.234 89.2249 135.837 89.2249H106.76Z"
+      fill={color}
+    />
+    <Path
+      d="M8.27923 81.8309V121H17.0723L19.1707 111.707C22.1017 115.238 25.9653 118.003 30.7616 120.001C35.5578 121.999 40.7537 122.999 46.3493 122.999C53.6103 122.999 59.9387 122.033 65.3344 120.101C70.6636 118.102 75.0268 115.371 78.4242 111.907C81.8215 108.377 84.3195 104.38 85.9183 99.9167C87.517 95.3869 88.3164 90.5241 88.3164 85.3281C88.3164 80.1322 87.4837 75.2694 85.8184 70.7396C84.153 66.2098 81.6217 62.213 78.2243 58.749C74.827 55.2851 70.4971 52.5872 65.2345 50.6554C59.972 48.6569 53.8102 47.6577 46.749 47.6577C41.4865 47.6577 36.657 48.2906 32.2604 49.5562C27.7972 50.8219 23.9669 52.5872 20.7694 54.8521C17.5053 57.117 14.9407 59.7815 13.0755 62.8458C11.1436 65.8434 9.9779 69.1075 9.57821 72.6381H25.7655C27.0312 68.0417 29.6291 64.6111 33.5594 62.3462C37.423 60.0147 41.9528 58.8489 47.1487 58.8489C51.6119 58.8489 55.5088 59.5151 58.8395 60.8474C62.1036 62.113 64.7682 63.9449 66.8333 66.343C68.8317 68.7412 70.3305 71.6056 71.3297 74.9363C72.2623 78.2004 72.7286 81.8309 72.7286 85.8278C72.7286 90.3575 72.0625 94.3211 70.7302 97.7184C69.3979 101.049 67.566 103.747 65.2345 105.812C62.903 107.877 60.2718 109.409 57.3407 110.408C54.3431 111.341 51.2122 111.807 47.9481 111.807C40.5539 111.807 34.925 110.209 31.0614 107.011C27.1311 103.814 24.5331 99.1506 23.2675 93.0221H43.4516V81.8309H8.27923Z"
+      fill={color}
+    />
+  </Svg>
+);
+
 // 에러 상태 타입
 interface ErrorState {
   message: string;
   isRetryable: boolean;
 }
+
+// 테마 색상 정의 (FE와 동일)
+const colors = {
+  light: {
+    gradientStart: '#E8F4FC',
+    gradientEnd: '#D6EBFA',
+    text: '#1f2937',
+    textSecondary: '#6b7280',
+    buttonBg: '#ffffff',
+    buttonText: '#374151',
+    guestText: '#6b7280',
+    legalText: '#9ca3af',
+  },
+  dark: {
+    gradientStart: '#0c1222',
+    gradientEnd: '#1a2332',
+    text: '#f1f5f9',
+    textSecondary: '#94a3b8',
+    buttonBg: '#1e293b',
+    buttonText: '#e2e8f0',
+    guestText: '#94a3b8',
+    legalText: '#64748b',
+  },
+};
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({
   onLoginSuccess,
@@ -84,6 +108,27 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const insets = useSafeAreaInsets();
   const { isOffline } = useNetworkStatus();
   const setStoreError = useAuthStore(state => state.setError);
+
+  // 설정 스토어에서 테마 가져오기 (FE와 동기화됨)
+  // 동적 import 대신 직접 import로 변경
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    // 스토어에서 테마 가져오기
+    import('../stores/useSettingsStore').then(({ useSettingsStore }) => {
+      const theme = useSettingsStore.getState().getResolvedTheme();
+      setResolvedTheme(theme);
+
+      // 스토어 변경 구독
+      const unsubscribe = useSettingsStore.subscribe(state => {
+        setResolvedTheme(state.resolvedTheme);
+      });
+      return () => unsubscribe();
+    });
+  }, []);
+
+  const isDark = resolvedTheme === 'dark';
+  const theme = isDark ? colors.dark : colors.light;
 
   // 애니메이션
   const [fadeAnim] = useState(() => new Animated.Value(0));
@@ -175,7 +220,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   }, []);
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom + 24 }]}>
+    <LinearGradient
+      colors={[theme.gradientStart, theme.gradientEnd]}
+      style={[styles.container, { paddingBottom: insets.bottom + 24 }]}
+    >
       {/* 오프라인 배너 */}
       {isOffline && (
         <View style={styles.offlineBanner}>
@@ -194,9 +242,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         ]}
       >
         <View style={styles.logoContainer}>
-          <KangNaengBotLogo />
+          {/* 테마 적응형 로고 */}
+          <KangNaengBotLogo color={theme.text} />
           <Text
-            style={styles.subtitle}
+            style={[styles.subtitle, { color: theme.text }]}
             accessibilityRole="header"
             accessibilityLabel="강냉봇: AI가 만들어주는 나만의 시간표"
           >
@@ -229,14 +278,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       <View style={styles.buttonArea}>
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#6366f1" />
-            <Text style={styles.loadingText}>로그인 중...</Text>
+            <ActivityIndicator size="large" color="#4E92FF" />
+            <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+              로그인 중...
+            </Text>
           </View>
         ) : (
           <>
             {/* Google 로그인 버튼 */}
             <TouchableOpacity
-              style={[styles.googleButton, isOffline && styles.buttonDisabled]}
+              style={[
+                styles.googleButton,
+                { backgroundColor: theme.buttonBg },
+                isOffline && styles.buttonDisabled,
+              ]}
               onPress={handleGoogleLogin}
               activeOpacity={0.8}
               disabled={isOffline}
@@ -246,7 +301,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               accessibilityState={{ disabled: isOffline }}
             >
               <GoogleIcon />
-              <Text style={styles.googleButtonText}>Google로 계속하기</Text>
+              <Text
+                style={[styles.googleButtonText, { color: theme.buttonText }]}
+              >
+                Google로 계속하기
+              </Text>
             </TouchableOpacity>
 
             {/* 게스트 모드 버튼 */}
@@ -258,7 +317,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               accessibilityRole="button"
               accessibilityHint="로그인 없이 앱을 둘러봅니다. 일부 기능이 제한됩니다."
             >
-              <Text style={styles.guestButtonText}>게스트로 둘러보기</Text>
+              <Text
+                style={[styles.guestButtonText, { color: theme.guestText }]}
+              >
+                게스트로 둘러보기
+              </Text>
             </TouchableOpacity>
           </>
         )}
@@ -270,26 +333,31 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             accessibilityRole="link"
             accessibilityLabel="이용약관 열기"
           >
-            <Text style={styles.legalLinkText}>이용약관</Text>
+            <Text style={[styles.legalLinkText, { color: theme.legalText }]}>
+              이용약관
+            </Text>
           </TouchableOpacity>
-          <Text style={styles.legalDivider}>•</Text>
+          <Text style={[styles.legalDivider, { color: theme.legalText }]}>
+            •
+          </Text>
           <TouchableOpacity
             onPress={openPrivacyPolicy}
             accessibilityRole="link"
             accessibilityLabel="개인정보 처리방침 열기"
           >
-            <Text style={styles.legalLinkText}>개인정보 처리방침</Text>
+            <Text style={[styles.legalLinkText, { color: theme.legalText }]}>
+              개인정보 처리방침
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0c1222',
   },
   offlineBanner: {
     backgroundColor: '#dc2626',
@@ -314,7 +382,6 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 18,
     fontWeight: '500',
-    color: '#f1f5f9',
     textAlign: 'center',
     marginTop: 16,
     lineHeight: 26,
@@ -352,7 +419,6 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   loadingText: {
-    color: '#94a3b8',
     fontSize: 14,
     marginTop: 12,
   },
@@ -360,7 +426,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#1e293b',
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 9999,
@@ -368,9 +433,9 @@ const styles = StyleSheet.create({
     gap: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
-    elevation: 8,
+    elevation: 4,
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -378,7 +443,6 @@ const styles = StyleSheet.create({
   googleButtonText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#e2e8f0',
   },
   guestButton: {
     alignItems: 'center',
@@ -388,7 +452,6 @@ const styles = StyleSheet.create({
   },
   guestButtonText: {
     fontSize: 15,
-    color: '#94a3b8',
     fontWeight: '500',
   },
   legalLinks: {
@@ -399,11 +462,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   legalLinkText: {
-    color: '#64748b',
     fontSize: 12,
   },
   legalDivider: {
-    color: '#64748b',
     fontSize: 12,
   },
 });

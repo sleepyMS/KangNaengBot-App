@@ -16,6 +16,8 @@ import {
   View,
   Text,
   TouchableOpacity,
+  useColorScheme,
+  NativeModules,
 } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -34,6 +36,7 @@ interface WebViewContainerProps {
   onScheduleSaved?: (schedule: unknown) => void;
   onLogout?: () => void;
   onSessionExpired?: () => void;
+  onRequestLogin?: () => void; // 게스트 모드에서 로그인 요청 시
 }
 
 export interface WebViewContainerRef {
@@ -53,6 +56,7 @@ export const WebViewContainer = forwardRef<
       onScheduleSaved,
       onLogout,
       onSessionExpired,
+      onRequestLogin,
     },
     ref,
   ) => {
@@ -149,25 +153,8 @@ export const WebViewContainer = forwardRef<
         document.documentElement.style.setProperty('--safe-area-inset-left', '${insets.left}px');
         document.documentElement.style.setProperty('--safe-area-inset-right', '${insets.right}px');
         
-        // 앱 환경 표시
-        window.IS_NATIVE_APP = true;
-        window.PLATFORM = '${Platform.OS}';
-        window.IS_GUEST = ${isGuest};
-        
         // 네이티브에서 받은 토큰 주입 (자동 로그인)
         ${tokenInjection}
-        
-        // 네이티브에 메시지 전송 헬퍼
-        window.sendToNative = function(type, payload) {
-          if (window.ReactNativeWebView) {
-            window.ReactNativeWebView.postMessage(JSON.stringify({ type, payload }));
-          }
-        };
-        
-        // 네이티브 메시지 수신 리스너
-        window.addEventListener('nativeMessage', function(e) {
-          console.log('[NativeBridge] Received:', e.detail);
-        });
         
         // 세션 만료 감지 (기존 웹앱의 401 응답 등)
         const originalFetch = window.fetch;
@@ -182,7 +169,48 @@ export const WebViewContainer = forwardRef<
         true; // 주입 성공 표시
       })();
     `;
-    }, [accessToken, isGuest, insets]);
+    }, [accessToken, insets]);
+
+    // 시스템 테마 감지
+    const colorScheme = useColorScheme();
+
+    // 시스템 언어 감지 (간단 버전)
+    const getDeviceLocale = (): string => {
+      const locales =
+        NativeModules.SettingsManager?.settings?.AppleLocale || // iOS
+        NativeModules.I18nManager?.localeIdentifier || // Android fallback
+        'ko-KR';
+      return locales.replace('_', '-');
+    };
+
+    // 페이지 로드 전에 실행될 스크립트 (IS_NATIVE_APP, sendToNative, 테마, 언어 먼저 정의)
+    const injectedJavaScriptBeforeContentLoaded = React.useMemo(() => {
+      const theme = colorScheme === 'dark' ? 'dark' : 'light';
+      const locale = getDeviceLocale();
+
+      return `
+      (function() {
+        // 앱 환경 표시 (페이지 로드 전에 설정해야 FE에서 감지 가능)
+        window.IS_NATIVE_APP = true;
+        window.PLATFORM = '${Platform.OS}';
+        window.IS_GUEST = ${isGuest};
+        
+        // 시스템 테마 및 언어 (FE에서 감지하여 적용)
+        window.NATIVE_THEME = '${colorScheme || 'light'}';
+        window.NATIVE_LOCALE = '${getDeviceLocale()}';
+        
+        // 네이티브에 메시지 전송 헬퍼
+        window.sendToNative = function(type, payload) {
+          if (window.ReactNativeWebView) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type, payload }));
+          }
+        };
+        
+        console.log('[NativeBridge] Initialized: IS_NATIVE_APP=' + window.IS_NATIVE_APP + ', Theme=' + window.NATIVE_THEME + ', Locale=' + window.NATIVE_LOCALE);
+        true;
+      })();
+    `;
+    }, [isGuest, colorScheme]);
 
     // 네이티브 메시지 수신 처리
     const handleMessage = useCallback(
@@ -200,6 +228,41 @@ export const WebViewContainer = forwardRef<
             case BridgeMessageTypes.SESSION_EXPIRED:
               onSessionExpired?.();
               break;
+            case BridgeMessageTypes.REQUEST_LOGIN:
+              console.log('[WebViewContainer] Login requested from WebView');
+              onRequestLogin?.();
+              break;
+            case BridgeMessageTypes.THEME_CHANGED: {
+              const { theme } = message.payload as {
+                theme: 'light' | 'dark' | 'system';
+              };
+              console.log(
+                '[WebViewContainer] Theme changed from WebView:',
+                theme,
+              );
+              // 동적 import로 순환 참조 방지
+              import('../stores/useSettingsStore').then(
+                ({ useSettingsStore }) => {
+                  useSettingsStore.getState().setTheme(theme);
+                },
+              );
+              break;
+            }
+            case BridgeMessageTypes.LOCALE_CHANGED: {
+              const { locale } = message.payload as {
+                locale: 'ko' | 'en' | 'ja' | 'zh';
+              };
+              console.log(
+                '[WebViewContainer] Locale changed from WebView:',
+                locale,
+              );
+              import('../stores/useSettingsStore').then(
+                ({ useSettingsStore }) => {
+                  useSettingsStore.getState().setLanguage(locale);
+                },
+              );
+              break;
+            }
             default:
               console.log('[WebViewContainer] Unknown message:', message.type);
           }
@@ -207,7 +270,7 @@ export const WebViewContainer = forwardRef<
           console.error('[WebViewContainer] Failed to parse message:', error);
         }
       },
-      [onScheduleSaved, onLogout, onSessionExpired],
+      [onScheduleSaved, onLogout, onSessionExpired, onRequestLogin],
     );
 
     // Android 하드웨어 뒤로가기 처리
@@ -271,10 +334,12 @@ export const WebViewContainer = forwardRef<
           ref={webViewRef}
           source={{ uri: Config.WEB_APP_URL }}
           style={styles.webview}
-          // JavaScript 설정
           javaScriptEnabled={true}
           domStorageEnabled={true}
           injectedJavaScript={injectedJavaScript}
+          injectedJavaScriptBeforeContentLoaded={
+            injectedJavaScriptBeforeContentLoaded
+          }
           // 메시지 처리
           onMessage={handleMessage}
           // 네비게이션 상태
