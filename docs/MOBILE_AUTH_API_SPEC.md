@@ -257,4 +257,4 @@ curl -X POST "https://your-api.com/auth/google/callback" \
 ## 참고 자료
 
 - [Google Identity - Verify ID Token](https://developers.google.com/identity/sign-in/web/backend-auth#verify-the-integrity-of-the-id-token)
-- [React Native Google Sign-In](https://react-native-google-signin.github.io/docs/)
+- [React Native Google Sign-In](https://react-native-google-signin.github.io/)
