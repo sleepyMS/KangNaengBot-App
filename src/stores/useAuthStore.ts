@@ -38,6 +38,7 @@ interface AuthState {
   login: (tokens: AuthTokens, user: UserInfo) => void;
   loginAsGuest: () => void;
   updateTokens: (tokens: AuthTokens) => void;
+  setAccessToken: (token: string) => void;
   logout: () => void;
   clearError: () => void;
   isTokenExpired: () => boolean;
@@ -112,6 +113,13 @@ export const useAuthStore = create<AuthState>()(
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken ?? get().refreshToken,
           tokenExpiresAt: tokens.expiresAt ?? null,
+        }),
+
+      // 액세스 토큰만 갱신 (WebView 동기화용)
+      setAccessToken: (token: string) =>
+        set({
+          accessToken: token,
+          // 리프레시 토큰이나 만료 시간은 건드리지 않음
         }),
 
       // 로그아웃 (상태만 초기화, 실제 signOut은 authService에서)

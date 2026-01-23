@@ -25,6 +25,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Config, BridgeMessageTypes } from '../config';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { useAuthStore } from '../stores/useAuthStore';
+import { useSettingsStore } from '../stores/useSettingsStore';
 
 interface BridgeMessage {
   type: string;
@@ -324,6 +326,12 @@ export const WebViewContainer = forwardRef<
               console.log('[WebViewContainer] Login requested from WebView');
               onRequestLogin?.();
               break;
+            case BridgeMessageTypes.TOKEN_UPDATED: {
+              const { token } = message.payload as { token: string };
+              console.log('[WebViewContainer] Token updated from WebView');
+              useAuthStore.getState().setAccessToken(token);
+              break;
+            }
             case BridgeMessageTypes.THEME_CHANGED: {
               const { theme } = message.payload as {
                 theme: 'light' | 'dark' | 'system';
@@ -332,12 +340,7 @@ export const WebViewContainer = forwardRef<
                 '[WebViewContainer] Theme changed from WebView:',
                 theme,
               );
-              // 동적 import로 순환 참조 방지
-              import('../stores/useSettingsStore').then(
-                ({ useSettingsStore }) => {
-                  useSettingsStore.getState().setTheme(theme);
-                },
-              );
+              useSettingsStore.getState().setTheme(theme);
               break;
             }
             case BridgeMessageTypes.LOCALE_CHANGED: {
@@ -348,11 +351,7 @@ export const WebViewContainer = forwardRef<
                 '[WebViewContainer] Locale changed from WebView:',
                 locale,
               );
-              import('../stores/useSettingsStore').then(
-                ({ useSettingsStore }) => {
-                  useSettingsStore.getState().setLanguage(locale);
-                },
-              );
+              useSettingsStore.getState().setLanguage(locale);
               break;
             }
             default:
