@@ -23,10 +23,6 @@ class ScheduleRemoteViewsFactory(private val context: Context) : RemoteViewsServ
         val data = repository.getScheduleData()
         
         // Filter for TODAY's classes
-        // Note: Java/Kotlin Calendar.SUNDAY is 1, our data uses 0=Sun. 
-        // Let's use java.util.Calendar to be safe or assuming 0=Sun from dayjs.
-        // Dayjs 0=Sun, 1=Mon. 
-        // Java Calendar: SUNDAY=1, MONDAY=2. So Calendar.DAY_OF_WEEK - 1 = our index.
         val calendar = java.util.Calendar.getInstance()
         val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1 // 0=Sun ... 6=Sat
         
@@ -42,40 +38,45 @@ class ScheduleRemoteViewsFactory(private val context: Context) : RemoteViewsServ
     override fun getCount(): Int = classItems.size
 
     override fun getViewAt(position: Int): RemoteViews {
+        android.util.Log.d("KangNaengWidget", "Factory: getViewAt $position")
+        if (position >= classItems.size) return RemoteViews(context.packageName, R.layout.item_widget_class)
+
+        val views = RemoteViews(context.packageName, R.layout.item_widget_class)
+
         try {
-            if (position >= classItems.size) return RemoteViews(context.packageName, R.layout.item_widget_class)
-
             val item = classItems[position]
-            val views = RemoteViews(context.packageName, R.layout.item_widget_class)
+            android.util.Log.d("KangNaengWidget", "Factory: Binding ${item.title}")
 
-            // Bind Data (Safe Call)
+            // Bind Basic Text
             views.setTextViewText(R.id.widget_item_title, item.title ?: "제목 없음")
-            views.setTextViewText(R.id.widget_item_time, item.timeDisplay ?: "-")
-            views.setTextViewText(R.id.widget_item_room, item.location ?: "장소 미정")
+            views.setTextViewText(R.id.widget_item_time, item.timeDisplay ?: "")
+            views.setTextViewText(R.id.widget_item_room, item.location ?: "")
 
-            // Bind Color Decorator
+            // Simple Color Logic (using setBackgroundColor on ImageView)
             try {
-                val color = Color.parseColor(item.color ?: "#CCCCCC")
-                views.setInt(R.id.widget_item_color_strip, "setBackgroundColor", color)
+                if (!item.color.isNullOrEmpty()) {
+                    views.setInt(R.id.widget_item_color_strip, "setBackgroundColor", Color.parseColor(item.color))
+                } else {
+                    views.setInt(R.id.widget_item_color_strip, "setBackgroundColor", Color.GRAY)
+                }
             } catch (e: Exception) {
                 views.setInt(R.id.widget_item_color_strip, "setBackgroundColor", Color.GRAY)
             }
 
-            // Fill In Intent for Deep Link
+            // Fill In Intent
+            val fillInIntent = Intent()
             val deepLinkUrl = item.deepLink
             if (!deepLinkUrl.isNullOrEmpty()) {
-                val fillInIntent = Intent().apply {
-                    data = Uri.parse(deepLinkUrl)
-                    action = Intent.ACTION_VIEW
-                }
-                views.setOnClickFillInIntent(R.id.widget_item_container, fillInIntent)
+                fillInIntent.data = Uri.parse(deepLinkUrl)
             }
+            views.setOnClickFillInIntent(R.id.widget_item_container, fillInIntent)
 
-            return views
         } catch (e: Exception) {
             e.printStackTrace()
-            return RemoteViews(context.packageName, R.layout.item_widget_class)
+            android.util.Log.e("KangNaengWidget", "Factory: Error in getViewAt", e)
         }
+
+        return views
     }
 
     override fun getLoadingView(): RemoteViews? = null

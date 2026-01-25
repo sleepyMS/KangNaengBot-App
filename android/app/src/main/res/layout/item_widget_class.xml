@@ -7,11 +7,12 @@
     android:id="@+id/widget_item_container">
 
     <!-- Color Accent Line -->
-    <View
+    <!-- Color Accent Line -->
+    <ImageView
         android:id="@+id/widget_item_color_strip"
         android:layout_width="4dp"
         android:layout_height="match_parent"
-        android:background="#FF5733"
+        android:background="#CCCCCC"
         android:layout_marginEnd="8dp"
         android:layout_marginTop="2dp"
         android:layout_marginBottom="2dp"/>
