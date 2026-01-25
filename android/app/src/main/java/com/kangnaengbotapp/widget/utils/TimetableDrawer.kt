@@ -53,6 +53,9 @@ class TimetableDrawer(private val context: Context) {
         val totalHours = endHour - startHour
         val cellHeight = (height - HEADER_HEIGHT) / totalHours
 
+        // Helper for SP to PX
+        val sp = context.resources.displayMetrics.scaledDensity
+        
         // 1. Draw Grid Lines & Headers
         paint.color = Color.parseColor("#2c2d3a") // Grid line color
         paint.strokeWidth = 2f
@@ -67,7 +70,7 @@ class TimetableDrawer(private val context: Context) {
                 val hour = startHour + i
                 val timeText = String.format("%02d:00", hour)
                 paint.color = Color.GRAY
-                paint.textSize = 20f
+                paint.textSize = 11f * sp // 11sp
                 paint.textAlign = Paint.Align.CENTER
                 canvas.drawText(timeText, TIME_COLUMN_WIDTH / 2, y + 30f, paint) // Centered in column
             }
@@ -83,7 +86,7 @@ class TimetableDrawer(private val context: Context) {
             // Day Header Text
             if (i < NUM_DAYS) {
                 paint.color = Color.WHITE
-                paint.textSize = 28f
+                paint.textSize = 14f * sp // 14sp
                 paint.textAlign = Paint.Align.CENTER
                 paint.typeface = Typeface.DEFAULT_BOLD
                 canvas.drawText(days[i], x + (cellWidth / 2), HEADER_HEIGHT / 1.5f, paint)
@@ -120,8 +123,12 @@ class TimetableDrawer(private val context: Context) {
                 canvas.drawRoundRect(rect, 8f, 8f, paint)
                 
                 // Draw Text (Title)
+                val titleSize = 13f * sp
+                val roomSize = 10f * sp
+                val lineHeight = titleSize + 10f // Spacing
+
                 paint.color = Color.WHITE
-                paint.textSize = 22f
+                paint.textSize = titleSize // 13sp
                 paint.textAlign = Paint.Align.LEFT
                 // Simple text wrapping or clipping logic
                 val title = item.title ?: ""
@@ -130,11 +137,11 @@ class TimetableDrawer(private val context: Context) {
                 // Measure text to ensure it fits or clip
                 // Just draw two lines for simplicity
                 val textX = leftX + 8f
-                var textY = topY + 30f
+                var textY = topY + titleSize + 5f // Initial baseline
                 canvas.drawText(title, textX, textY, paint)
                 
-                textY += 25f
-                paint.textSize = 18f
+                textY += lineHeight
+                paint.textSize = roomSize // 10sp
                 paint.color = Color.parseColor("#DDDDDD")
                 canvas.drawText(room, textX, textY, paint)
             }
