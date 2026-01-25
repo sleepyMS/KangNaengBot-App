@@ -22,6 +22,44 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="kangnaeng" />
+        </intent-filter>
       </activity>
+
+      <!-- Widget Provider -->
+      <receiver
+          android:name=".widget.ScheduleWidgetProvider"
+          android:exported="true"
+          android:label="강냉봇 시간표">
+          <intent-filter>
+              <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+          </intent-filter>
+          <meta-data
+              android:name="android.appwidget.provider"
+              android:resource="@xml/widget_schedule_info" />
+      </receiver>
+
+      <!-- Full Schedule Widget Provider (Grid) -->
+      <receiver
+          android:name=".widget.FullScheduleWidgetProvider"
+          android:exported="true"
+          android:label="강냉봇 주간 시간표">
+          <intent-filter>
+              <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+          </intent-filter>
+          <meta-data
+              android:name="android.appwidget.provider"
+              android:resource="@xml/widget_full_schedule_info" />
+      </receiver>
+
+      <!-- Widget Service (for ListView) -->
+      <service
+          android:name=".widget.ScheduleRemoteViewsService"
+          android:permission="android.permission.BIND_REMOTEVIEWS" />
+
     </application>
 </manifest>

@@ -27,6 +27,7 @@ import { Config, BridgeMessageTypes } from '../config';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useSettingsStore } from '../stores/useSettingsStore';
+import { widgetService } from '../services/widgetService';
 
 interface BridgeMessage {
   type: string;
@@ -314,12 +315,25 @@ export const WebViewContainer = forwardRef<
 
           switch (message.type) {
             case BridgeMessageTypes.SCHEDULE_SAVED:
+              console.log(
+                '[WebViewContainer] Schedule saved, updating widget...',
+              );
               onScheduleSaved?.(message.payload);
+              // 위젯 업데이트 트리거
+              if (message.payload) {
+                // @ts-ignore: Payload type is unknown but service handles validation
+                widgetService.updateWidget(message.payload);
+              }
               break;
             case BridgeMessageTypes.LOGOUT:
+              console.log(
+                '[WebViewContainer] Logout requested, clearing widget...',
+              );
+              widgetService.clearWidget();
               onLogout?.();
               break;
             case BridgeMessageTypes.SESSION_EXPIRED:
+              widgetService.clearWidget();
               onSessionExpired?.();
               break;
             case BridgeMessageTypes.REQUEST_LOGIN:
