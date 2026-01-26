@@ -577,6 +577,12 @@ export const WebViewContainer = forwardRef<
               });
               break;
             }
+            case BridgeMessageTypes.EXIT_APP:
+              console.log(
+                '[WebViewContainer] EXIT_APP received, exiting app...',
+              );
+              BackHandler.exitApp();
+              break;
             default:
               console.log('[WebViewContainer] Unknown message:', message.type);
           }
@@ -591,11 +597,16 @@ export const WebViewContainer = forwardRef<
     useFocusEffect(
       useCallback(() => {
         const onBackPress = () => {
-          if (canGoBack && webViewRef.current) {
-            webViewRef.current.goBack();
-            return true; // 이벤트 소비
+          if (webViewRef.current) {
+            // Web에게 뒤로가기 이벤트 전달 (Web이 알아서 처리하거나 EXIT_APP 요청)
+            webViewRef.current.postMessage(
+              JSON.stringify({
+                type: BridgeMessageTypes.HARDWARE_BACK_PRESS,
+              }),
+            );
+            return true; // 무조건 이벤트 소비 (앱 즉시 종료 방지)
           }
-          return false; // 기본 동작 (앱 종료)
+          return false; // WebView 없으면 기본 동작
         };
 
         if (Platform.OS === 'android') {

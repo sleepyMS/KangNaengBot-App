@@ -62,4 +62,8 @@ export const BridgeMessageTypes = {
   SET_NOTI_ENABLED: 'SET_NOTI_ENABLED',
   SET_NOTI_OFFSET: 'SET_NOTI_OFFSET',
   NOTI_STATE_UPDATED: 'NOTI_STATE_UPDATED',
+
+  // Navigation Bridge
+  HARDWARE_BACK_PRESS: 'HARDWARE_BACK_PRESS', // Native -> WebView
+  EXIT_APP: 'EXIT_APP', // WebView -> Native
 } as const;
