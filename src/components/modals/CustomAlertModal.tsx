@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   TouchableWithoutFeedback,
+  useColorScheme,
 } from 'react-native';
 import { useModalStore, ModalType } from '../../stores/useModalStore';
 import { AlertTriangle, Info, CheckCircle, XCircle } from 'lucide-react-native';
@@ -31,6 +32,8 @@ export const CustomAlertModal = () => {
     closeModal,
   } = useModalStore();
 
+  const isDark = useColorScheme() === 'dark';
+
   const handleConfirm = () => {
     onConfirm();
     closeModal();
@@ -39,6 +42,25 @@ export const CustomAlertModal = () => {
   const handleCancel = () => {
     if (onCancel) onCancel();
     closeModal();
+  };
+
+  // Dynamic Styles based on Theme
+  const dynamicStyles = {
+    container: {
+      backgroundColor: isDark ? '#1e293b' : '#ffffff',
+    },
+    title: {
+      color: isDark ? '#f1f5f9' : '#1e293b',
+    },
+    message: {
+      color: isDark ? '#cbd5e1' : '#475569',
+    },
+    cancelButton: {
+      borderColor: isDark ? '#475569' : '#e2e8f0',
+    },
+    cancelText: {
+      color: isDark ? '#cbd5e1' : '#64748b',
+    },
   };
 
   return (
@@ -51,24 +73,37 @@ export const CustomAlertModal = () => {
       <TouchableWithoutFeedback onPress={closeModal}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>
-            <View style={styles.modalContainer}>
+            <View style={[styles.modalContainer, dynamicStyles.container]}>
               {/* Icon */}
               <View style={styles.iconContainer}>{iconComponents[type]}</View>
 
               {/* Title */}
-              <Text style={styles.title}>{title}</Text>
+              <Text style={[styles.title, dynamicStyles.title]}>{title}</Text>
 
               {/* Message */}
-              <Text style={styles.message}>{message}</Text>
+              <Text style={[styles.message, dynamicStyles.message]}>
+                {message}
+              </Text>
 
               {/* Buttons */}
               <View style={styles.buttonContainer}>
                 {showCancel && (
                   <TouchableOpacity
-                    style={[styles.button, styles.cancelButton]}
+                    style={[
+                      styles.button,
+                      styles.cancelButton,
+                      dynamicStyles.cancelButton,
+                    ]}
                     onPress={handleCancel}
                   >
-                    <Text style={styles.cancelButtonText}>{cancelText}</Text>
+                    <Text
+                      style={[
+                        styles.cancelButtonText,
+                        dynamicStyles.cancelText,
+                      ]}
+                    >
+                      {cancelText}
+                    </Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
@@ -103,13 +138,12 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: '100%',
     maxWidth: 320,
-    backgroundColor: '#1e293b', // slate-800 (Dark mode base)
     borderRadius: 20,
     padding: 24,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 10,
     elevation: 10,
   },
@@ -119,13 +153,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#f1f5f9', // gray-100
     textAlign: 'center',
     marginBottom: 8,
   },
   message: {
     fontSize: 14,
-    color: '#cbd5e1', // gray-300
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
@@ -145,7 +177,6 @@ const styles = StyleSheet.create({
   cancelButton: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#475569', // gray-600
   },
   primaryButton: {
     backgroundColor: '#6366f1', // primary-500
@@ -154,7 +185,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#ef4444', // red-500
   },
   cancelButtonText: {
-    color: '#cbd5e1', // gray-300
     fontWeight: '600',
     fontSize: 14,
   },
