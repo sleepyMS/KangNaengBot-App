@@ -11,6 +11,7 @@ import {
   NotificationPrimeModal,
   useNotificationPrime,
 } from '../components/modals/NotificationPrimeModal';
+import { CustomAlertModal } from '../components/modals/CustomAlertModal';
 import type { UserInfo } from '../stores/useAuthStore';
 
 interface MainScreenProps {
@@ -90,6 +91,9 @@ export const MainScreen: React.FC<MainScreenProps> = ({
         onClose={handleClose}
         onAllow={handleAllowWithSync}
       />
+
+      {/* Global Alert Modal */}
+      <CustomAlertModal />
     </View>
   );
 };

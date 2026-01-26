@@ -376,6 +376,82 @@ export const WebViewContainer = forwardRef<
               useSettingsStore.getState().setLanguage(locale);
               break;
             }
+            // --- Image Save Bridge Handler ---
+            case BridgeMessageTypes.SAVE_IMAGE: {
+              const { dataUrl, filename } = message.payload as {
+                dataUrl: string;
+                filename: string;
+              };
+              console.log('[WebViewContainer] Save image requested:', filename);
+
+              // Lazy import to avoid potential cycles
+              const {
+                imageSaveService,
+              } = require('../services/imageSaveService');
+              const { useModalStore } = require('../stores/useModalStore');
+              const { Linking } = require('react-native');
+
+              imageSaveService
+                .saveBase64Image(dataUrl, filename)
+                .then((result: any) => {
+                  if (result.success) {
+                    // 성공 모달
+                    useModalStore.getState().openModal({
+                      type: 'success',
+                      title: '저장 완료',
+                      message: '시간표가 갤러리에 저장되었습니다.',
+                      confirmText: '확인',
+                      showCancel: false,
+                      onConfirm: () => {},
+                    });
+                    console.log('[WebViewContainer] Image saved successfully');
+                  } else {
+                    // 실패: 에러 타입에 따라 모달 표시
+                    const openModal = useModalStore.getState().openModal;
+
+                    if (
+                      result.error === 'PERMISSION_DENIED' ||
+                      result.error === 'PERMISSION_DENIED_NEVER_ASK'
+                    ) {
+                      openModal({
+                        type: 'warning',
+                        title: '권한 필요',
+                        message:
+                          '이미지를 저장하려면 저장소 접근 권한이 필요합니다. 설정에서 권한을 허용해주세요.',
+                        confirmText: '설정으로 이동',
+                        cancelText: '취소',
+                        onConfirm: () => Linking.openSettings(),
+                        showCancel: true,
+                      });
+                    } else if (result.error === 'SAVE_FAILED') {
+                      openModal({
+                        type: 'danger',
+                        title: '저장 실패',
+                        message:
+                          '이미지 저장 중 오류가 발생했습니다. 다시 시도해주세요.',
+                        confirmText: '확인',
+                        showCancel: false,
+                        onConfirm: () => {},
+                      });
+                    } else {
+                      // NOT_ANDROID etc.
+                      console.warn(
+                        '[WebViewContainer] Save failed:',
+                        result.error,
+                      );
+                    }
+                  }
+
+                  // 결과를 WebView에 알림 (선택사항)
+                  webViewRef.current?.postMessage(
+                    JSON.stringify({
+                      type: 'IMAGE_SAVE_RESULT',
+                      payload: { success: result.success },
+                    }),
+                  );
+                });
+              break;
+            }
             // --- Notification Bridge Handlers ---
             case BridgeMessageTypes.GET_NOTI_STATE: {
               // Async Import

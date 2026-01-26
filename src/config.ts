@@ -55,6 +55,7 @@ export const BridgeMessageTypes = {
   REQUEST_LOGIN: 'REQUEST_LOGIN', // 게스트 모드에서 로그인 요청
   THEME_CHANGED: 'THEME_CHANGED', // 테마 변경
   LOCALE_CHANGED: 'LOCALE_CHANGED', // 언어 변경
+  SAVE_IMAGE: 'SAVE_IMAGE', // 이미지 갤러리 저장 요청
 
   // Notification Bridge
   GET_NOTI_STATE: 'GET_NOTI_STATE',
