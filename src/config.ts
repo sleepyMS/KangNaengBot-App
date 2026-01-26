@@ -55,4 +55,10 @@ export const BridgeMessageTypes = {
   REQUEST_LOGIN: 'REQUEST_LOGIN', // 게스트 모드에서 로그인 요청
   THEME_CHANGED: 'THEME_CHANGED', // 테마 변경
   LOCALE_CHANGED: 'LOCALE_CHANGED', // 언어 변경
+
+  // Notification Bridge
+  GET_NOTI_STATE: 'GET_NOTI_STATE',
+  SET_NOTI_ENABLED: 'SET_NOTI_ENABLED',
+  SET_NOTI_OFFSET: 'SET_NOTI_OFFSET',
+  NOTI_STATE_UPDATED: 'NOTI_STATE_UPDATED',
 } as const;

@@ -239,6 +239,10 @@ export const widgetService = {
 
       // JSON 문자열로 변환하여 전송
       WidgetModule.updateScheduleData(JSON.stringify(widgetData));
+
+      // 알림 시스템에도 데이터 변경 알림 (즉시 동기화)
+      const { notificationService } = require('./notificationService');
+      notificationService.refreshNotifications();
     } catch (error) {
       console.error('[WidgetService] Failed to update widget:', error);
     }

@@ -51,6 +51,9 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
                 // Reschedule Alarm for ALL events to ensure robustness
                 // (e.g. Boot clears alarm, TimeZone change shifts midnight)
                 scheduleNextMidnightAlarm(context)
+                
+                // Also Refresh Notifications for "Today"
+                com.kangnaengbotapp.notification.NotificationScheduler.scheduleTodayAlarms(context)
             }
         }
     }
@@ -65,6 +68,7 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
         scheduleNextMidnightAlarm(context)
+        com.kangnaengbotapp.notification.NotificationScheduler.scheduleTodayAlarms(context)
     }
 
     override fun onDisabled(context: Context) {

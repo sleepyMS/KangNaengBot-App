@@ -2,6 +2,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
       android:name=".MainApplication"
@@ -65,6 +66,9 @@
       <service
           android:name=".widget.ScheduleRemoteViewsService"
           android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+      <!-- Notification Receiver -->
+      <receiver android:name=".notification.ClassNotificationReceiver" />
 
     </application>
 </manifest>

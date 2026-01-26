@@ -20,6 +20,7 @@ import {
   NativeModules,
   ActivityIndicator,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -53,9 +54,11 @@ interface WebViewContainerProps {
 }
 
 export interface WebViewContainerRef {
-  injectToken: (token: string) => void;
-  reload: () => void;
-  goBack: () => boolean;
+  syncNotificationState: (
+    enabled: boolean,
+    offset: number,
+    permissionGranted: boolean,
+  ) => void;
 }
 
 export const WebViewContainer = forwardRef<
@@ -90,39 +93,17 @@ export const WebViewContainer = forwardRef<
 
     // 외부에서 사용할 수 있는 메서드 노출
     useImperativeHandle(ref, () => ({
-      injectToken: (token: string) => {
-        const script = `
-        (function() {
-          localStorage.setItem('access_token', '${escapeJsString(token)}');
-          const authStorage = localStorage.getItem('auth-storage');
-          if (authStorage) {
-            try {
-              const data = JSON.parse(authStorage);
-              data.state = data.state || {};
-              data.state.isAuthenticated = true;
-              localStorage.setItem('auth-storage', JSON.stringify(data));
-            } catch (e) {}
-          }
-          // 앱에 토큰 갱신 알림 (Race Condition 방지를 위해 지연 발송)
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('nativeTokenRefreshed', { detail: { token: '${escapeJsString(
-              token,
-            )}' } }));
-          }, 100);
-          true;
-        })();
-      `;
-        webViewRef.current?.injectJavaScript(script);
-      },
-      reload: () => {
-        webViewRef.current?.reload();
-      },
-      goBack: () => {
-        if (canGoBack && webViewRef.current) {
-          webViewRef.current.goBack();
-          return true;
-        }
-        return false;
+      syncNotificationState: (
+        enabled: boolean,
+        offset: number,
+        permissionGranted: boolean,
+      ) => {
+        webViewRef.current?.postMessage(
+          JSON.stringify({
+            type: BridgeMessageTypes.NOTI_STATE_UPDATED,
+            payload: { enabled, offset, permissionGranted },
+          }),
+        );
       },
     }));
 
@@ -366,6 +347,132 @@ export const WebViewContainer = forwardRef<
                 locale,
               );
               useSettingsStore.getState().setLanguage(locale);
+              useSettingsStore.getState().setLanguage(locale);
+              break;
+            }
+            // --- Notification Bridge Handlers ---
+            case BridgeMessageTypes.GET_NOTI_STATE: {
+              // Async Import
+              const {
+                notificationService,
+              } = require('../services/notificationService');
+              const { NotificationModule } = NativeModules;
+
+              Promise.all([
+                notificationService.checkPermission(),
+                AsyncStorage.getItem('setting_noti_enabled'),
+                AsyncStorage.getItem('setting_noti_offset'),
+              ]).then(([hasPerm, enabledStr, offsetStr]) => {
+                const isEnabled = enabledStr === 'true';
+                const offset = offsetStr ? parseInt(offsetStr, 10) : 10;
+
+                // Reply to Web
+                const state = {
+                  enabled: isEnabled && hasPerm, // Can only be effectively enabled if perm granted
+                  offset: offset,
+                  permissionGranted: hasPerm,
+                };
+
+                webViewRef.current?.postMessage(
+                  JSON.stringify({
+                    type: BridgeMessageTypes.NOTI_STATE_UPDATED,
+                    payload: state,
+                  }),
+                );
+              });
+              break;
+            }
+            case BridgeMessageTypes.SET_NOTI_ENABLED: {
+              const { enabled } = message.payload as { enabled: boolean };
+              const {
+                notificationService,
+              } = require('../services/notificationService');
+
+              if (enabled) {
+                notificationService
+                  .requestPermission()
+                  .then((granted: boolean) => {
+                    if (granted) {
+                      // Enable logic
+                      AsyncStorage.getItem('setting_noti_offset').then(
+                        offsetStr => {
+                          const offset = offsetStr
+                            ? parseInt(offsetStr, 10)
+                            : 10;
+                          notificationService.setSettings(true, offset);
+                          AsyncStorage.setItem('setting_noti_enabled', 'true');
+
+                          // Reply Success
+                          webViewRef.current?.postMessage(
+                            JSON.stringify({
+                              type: BridgeMessageTypes.NOTI_STATE_UPDATED,
+                              payload: {
+                                enabled: true,
+                                offset,
+                                permissionGranted: true,
+                              },
+                            }),
+                          );
+                        },
+                      );
+                    } else {
+                      // Permission Denied -> Check if Blocked?
+                      // Complex in Android to detect "Blocked" vs "Denied" easily in one shot
+                      // Just reply disabled
+                      AsyncStorage.getItem('setting_noti_offset').then(
+                        offsetStr => {
+                          const offset = offsetStr
+                            ? parseInt(offsetStr, 10)
+                            : 10;
+
+                          webViewRef.current?.postMessage(
+                            JSON.stringify({
+                              type: BridgeMessageTypes.NOTI_STATE_UPDATED,
+                              payload: {
+                                enabled: false,
+                                offset,
+                                permissionGranted: false,
+                              },
+                            }),
+                          );
+                        },
+                      );
+                    }
+                  });
+              } else {
+                // Disable Logic
+                AsyncStorage.getItem('setting_noti_offset').then(offsetStr => {
+                  const offset = offsetStr ? parseInt(offsetStr, 10) : 10;
+                  notificationService.setSettings(false, offset);
+                  AsyncStorage.setItem('setting_noti_enabled', 'false');
+
+                  // Reply Success
+                  webViewRef.current?.postMessage(
+                    JSON.stringify({
+                      type: BridgeMessageTypes.NOTI_STATE_UPDATED,
+                      payload: {
+                        enabled: false,
+                        offset,
+                        permissionGranted: true,
+                      }, // Perm stays granted technically
+                    }),
+                  );
+                });
+              }
+              break;
+            }
+            case BridgeMessageTypes.SET_NOTI_OFFSET: {
+              const { offset } = message.payload as { offset: number };
+              const {
+                notificationService,
+              } = require('../services/notificationService');
+
+              AsyncStorage.setItem('setting_noti_offset', String(offset));
+              // If enabled, sync native
+              AsyncStorage.getItem('setting_noti_enabled').then(enabledStr => {
+                const isEnabled = enabledStr === 'true';
+                notificationService.setSettings(isEnabled, offset);
+              });
               break;
             }
             default:
