@@ -19,6 +19,8 @@ import {
   useColorScheme,
   NativeModules,
   ActivityIndicator,
+  AppState,
+  type AppStateStatus,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
@@ -579,8 +581,16 @@ export const WebViewContainer = forwardRef<
             }
             case BridgeMessageTypes.EXIT_APP:
               console.log(
-                '[WebViewContainer] EXIT_APP received, exiting app...',
+                '[WebViewContainer] EXIT_APP received, performing clean exit...',
               );
+              // 중요: 앱 종료 전 리스너를 제거해야, 재진입 시 꼬이지 않음
+              if (backHandlerSubscriptionRef.current) {
+                console.log(
+                  '[WebViewContainer] Removing BackHandler before exit',
+                );
+                backHandlerSubscriptionRef.current();
+                backHandlerSubscriptionRef.current = null;
+              }
               BackHandler.exitApp();
               break;
             default:
@@ -593,31 +603,71 @@ export const WebViewContainer = forwardRef<
       [onScheduleSaved, onLogout, onSessionExpired, onRequestLogin],
     );
 
-    // Android 하드웨어 뒤로가기 처리
-    useFocusEffect(
-      useCallback(() => {
-        const onBackPress = () => {
-          if (webViewRef.current) {
-            // Web에게 뒤로가기 이벤트 전달 (Web이 알아서 처리하거나 EXIT_APP 요청)
-            webViewRef.current.postMessage(
-              JSON.stringify({
-                type: BridgeMessageTypes.HARDWARE_BACK_PRESS,
-              }),
-            );
-            return true; // 무조건 이벤트 소비 (앱 즉시 종료 방지)
-          }
-          return false; // WebView 없으면 기본 동작
-        };
+    // Android 하드웨어 뒤로가기 처리 (AppState 감지 추가)
+    // 리스너 관리를 위한 Ref
+    const backHandlerSubscriptionRef = useRef<(() => void) | null>(null);
 
-        if (Platform.OS === 'android') {
-          const subscription = BackHandler.addEventListener(
-            'hardwareBackPress',
-            onBackPress,
+    // 내부에서 사용할 리스너 등록 함수
+    const registerBackHandler = useCallback(() => {
+      // 중복 등록 방지
+      if (backHandlerSubscriptionRef.current) {
+        backHandlerSubscriptionRef.current();
+      }
+
+      console.log('[BackHandler] Registering Listener');
+      const onBackPress = () => {
+        console.log('[BackHandler] Hardware Back Press detected');
+
+        if (webViewRef.current) {
+          console.log('[BackHandler] WebView Ref exists, sending event to Web');
+          webViewRef.current.postMessage(
+            JSON.stringify({
+              type: BridgeMessageTypes.HARDWARE_BACK_PRESS,
+            }),
           );
-          return () => subscription.remove();
+          return true;
         }
-      }, [canGoBack]),
-    );
+
+        console.log('[BackHandler] WebView Ref is NULL, allowing default exit');
+        return false;
+      };
+
+      const subscription = BackHandler.addEventListener(
+        'hardwareBackPress',
+        onBackPress,
+      );
+
+      backHandlerSubscriptionRef.current = () => subscription.remove();
+    }, []);
+
+    // Android 하드웨어 뒤로가기 처리 (useEffect로 변경 + 디버깅 로그 추가)
+    React.useEffect(() => {
+      if (Platform.OS !== 'android') return;
+
+      // 1. 초기 등록
+      registerBackHandler();
+
+      // 2. 앱 상태 감지 (백그라운드 -> 포그라운드 전환 시 리스너 재등록)
+      const appStateSubscription = AppState.addEventListener(
+        'change',
+        nextAppState => {
+          console.log('[BackHandler] AppState changed:', nextAppState);
+          if (nextAppState === 'active') {
+            console.log('[BackHandler] App active, Re-registering Listener');
+            registerBackHandler();
+          }
+        },
+      );
+
+      return () => {
+        console.log('[BackHandler] Cleaning up Listeners');
+        if (backHandlerSubscriptionRef.current) {
+          backHandlerSubscriptionRef.current();
+          backHandlerSubscriptionRef.current = null;
+        }
+        appStateSubscription.remove();
+      };
+    }, [registerBackHandler]);
 
     // 에러 화면 렌더링
     const renderError = () => (

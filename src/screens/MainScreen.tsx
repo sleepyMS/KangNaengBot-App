@@ -87,7 +87,7 @@ export const MainScreen: React.FC<MainScreenProps> = ({
 
       {/* Onboarding Prime Modal */}
       <NotificationPrimeModal
-        isVisible={showPrime && !isGuest} // 게스트는 알림 설정 보여주지 않음 (선택 사항)
+        isVisible={showPrime && !isGuest} // 게스트는 알림 설정 보여주지 않음
         onClose={handleClose}
         onAllow={handleAllowWithSync}
       />
