@@ -114,6 +114,8 @@ export const useNotificationPrime = () => {
     const granted = await notificationService.requestPermission();
     if (granted) {
       // Enable default settings
+      // 중요: 네이티브에서 허용 시 명시적으로 스토리지에 'enabled' 상태 저장
+      await AsyncStorage.setItem('setting_noti_enabled', 'true');
       notificationService.setSettings(true, 10);
     }
   };

@@ -132,41 +132,18 @@ export const WebViewContainer = forwardRef<
           }
         : null;
 
+      // 런타임 업데이트용 이벤트 디스패치 (로드 후 토큰 변경 시)
       const tokenInjection = accessToken
         ? `
-      localStorage.setItem('access_token', '${escapeJsString(accessToken)}');
-      const authStorage = localStorage.getItem('auth-storage');
-      const userFromNative = ${userForFE ? JSON.stringify(userForFE) : 'null'};
-      
-      if (authStorage) {
-        try {
-          const data = JSON.parse(authStorage);
-          data.state = data.state || {};
-          data.state.isAuthenticated = true;
-          if (userFromNative) {
-            data.state.user = userFromNative;
-          }
-          localStorage.setItem('auth-storage', JSON.stringify(data));
-        } catch (e) {}
-      } else {
-        localStorage.setItem('auth-storage', JSON.stringify({
-          state: { 
-            isAuthenticated: true,
-            user: userFromNative,
-          },
-          version: 0
-        }));
-      }
-      
-      // 앱에 토큰 갱신 알림 (userInfo 포함하여 즉시 UI 업데이트)
+      // 앱에 토큰 갱신 알림 (userInfo 포함하여 즉시 UI 업데이트 - 런타임용)
       setTimeout(() => {
         window.dispatchEvent(new CustomEvent('nativeTokenRefreshed', { 
           detail: { 
             token: '${escapeJsString(accessToken)}',
-            userInfo: userFromNative
+            userInfo: ${userForFE ? JSON.stringify(userForFE) : 'null'}
           } 
         }));
-      }, 500);
+      }, 100);
       `
         : '';
 
@@ -211,7 +188,53 @@ export const WebViewContainer = forwardRef<
     // 페이지 로드 전에 실행될 스크립트 (IS_NATIVE_APP, sendToNative, 테마, 언어 먼저 정의)
     const injectedJavaScriptBeforeContentLoaded = React.useMemo(() => {
       const theme = colorScheme === 'dark' ? 'dark' : 'light';
-      const locale = getDeviceLocale();
+
+      // FE User 타입에 맞게 변환 (photo -> picture)
+      const userForFE = userInfo
+        ? {
+            id: userInfo.id,
+            email: userInfo.email,
+            name: userInfo.name,
+            picture: userInfo.photo,
+          }
+        : null;
+
+      const tokenInjection = accessToken
+        ? `
+      try {
+        localStorage.setItem('access_token', '${escapeJsString(accessToken)}');
+        const authStorage = localStorage.getItem('auth-storage');
+        const userFromNative = ${
+          userForFE ? JSON.stringify(userForFE) : 'null'
+        };
+        
+        // zustand persist hydration 전에 스토리지 세팅
+        if (authStorage) {
+          try {
+            const data = JSON.parse(authStorage);
+            data.state = data.state || {};
+            data.state.isAuthenticated = true;
+            data.state.isLoading = true; // 중요: 초기 로딩 상태 주입하여 핑퐁 방지
+            if (userFromNative) {
+              data.state.user = userFromNative;
+            }
+            localStorage.setItem('auth-storage', JSON.stringify(data));
+          } catch (e) {}
+        } else {
+          localStorage.setItem('auth-storage', JSON.stringify({
+            state: { 
+              isAuthenticated: true,
+              isLoading: true, // 초기 로딩 상태 주입
+              user: userFromNative,
+            },
+            version: 0
+          }));
+        }
+      } catch (e) {
+        // Storage error handling
+      }
+      `
+        : '';
 
       return `
       (function() {
@@ -224,6 +247,9 @@ export const WebViewContainer = forwardRef<
         window.NATIVE_THEME = '${colorScheme || 'light'}';
         window.NATIVE_LOCALE = '${getDeviceLocale()}';
         
+        // 토큰 사전 주입 (FOUC 방지)
+        ${tokenInjection}
+        
         // 네이티브에 메시지 전송 헬퍼
         window.sendToNative = function(type, payload) {
           if (window.ReactNativeWebView) {
@@ -235,7 +261,7 @@ export const WebViewContainer = forwardRef<
         true;
       })();
     `;
-    }, [isGuest, colorScheme]);
+    }, [isGuest, colorScheme, accessToken, userInfo]);
 
     // 토큰 또는 유저 정보 변경 시 런타임 자동 주입 (Prop 변경 감지)
     React.useEffect(() => {
