@@ -23,29 +23,116 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
         android.util.Log.d("KangNaengWidget", "onReceive called with action: ${intent.action}")
         super.onReceive(context, intent)
         
-        // Handle list view data change updates
-        if (intent.action == AppWidgetManager.ACTION_APPWIDGET_UPDATE) {
+        val action = intent.action
+        
+        // Handle list view data change updates or System Events (Boot/Time)
+        if (action == AppWidgetManager.ACTION_APPWIDGET_UPDATE || 
+            action == ACTION_AUTO_UPDATE_MIDNIGHT ||
+            action == Intent.ACTION_BOOT_COMPLETED ||
+            action == Intent.ACTION_TIME_CHANGED ||
+            action == Intent.ACTION_TIMEZONE_CHANGED ||
+            action == Intent.ACTION_MY_PACKAGE_REPLACED) {
+            
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val thisAppWidget = ComponentName(context.packageName, ScheduleWidgetProvider::class.java.name)
             val appWidgetIds = appWidgetManager.getAppWidgetIds(thisAppWidget)
             
-            android.util.Log.d("KangNaengWidget", "onReceive: notifying list view data changed for IDs: ${appWidgetIds.contentToString()}")
-            // Notify ListView that data has changed (onDataSetChanged)
-            appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_list_view)
-            
-            // super.onReceive will call onUpdate automatically because we now pass IDs
+            // Only perform View Update for UPDATE or MIDNIGHT actions
+            // For Boot/Time, we just need to reschedule (Views will update if the system calls UPDATE, but checking doesn't hurt)
+            if (appWidgetIds.isNotEmpty()) {
+                android.util.Log.d("KangNaengWidget", "onReceive: processing system event [$action]")
+                
+                // Update views if it's a visual update trigger
+                if (action == AppWidgetManager.ACTION_APPWIDGET_UPDATE || action == ACTION_AUTO_UPDATE_MIDNIGHT) {
+                    onUpdate(context, appWidgetManager, appWidgetIds)
+                    appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_list_view)
+                }
+
+                // Reschedule Alarm for ALL events to ensure robustness
+                // (e.g. Boot clears alarm, TimeZone change shifts midnight)
+                scheduleNextMidnightAlarm(context)
+            }
         }
     }
 
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         android.util.Log.d("KangNaengWidget", "onUpdate called for IDs: ${appWidgetIds.contentToString()}")
-        // Perform this loop for every App Widget that belongs to this provider
         for (appWidgetId in appWidgetIds) {
             updateAppWidget(context, appWidgetManager, appWidgetId)
         }
     }
 
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        scheduleNextMidnightAlarm(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        cancelMidnightAlarm(context)
+    }
+
     companion object {
+        private const val ACTION_AUTO_UPDATE_MIDNIGHT = "com.kangnaengbotapp.widget.ACTION_AUTO_UPDATE_MIDNIGHT"
+
+        private fun scheduleNextMidnightAlarm(context: Context) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager ?: return
+            
+            val intent = Intent(context, ScheduleWidgetProvider::class.java).apply {
+                action = ACTION_AUTO_UPDATE_MIDNIGHT
+            }
+            
+            val pendingIntent = PendingIntent.getBroadcast(
+                context, 
+                0, 
+                intent, 
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            // Calculate next midnight
+            val calendar = java.util.Calendar.getInstance().apply {
+                timeInMillis = System.currentTimeMillis()
+                add(java.util.Calendar.DAY_OF_YEAR, 1)
+                set(java.util.Calendar.HOUR_OF_DAY, 0)
+                set(java.util.Calendar.MINUTE, 0)
+                set(java.util.Calendar.SECOND, 0)
+                set(java.util.Calendar.MILLISECOND, 0)
+            }
+
+            // Robust Scheduling
+            try {
+                // Try Exact Alarm (Ideal)
+                alarmManager.setExactAndAllowWhileIdle(
+                    android.app.AlarmManager.RTC_WAKEUP,
+                    calendar.timeInMillis,
+                    pendingIntent
+                )
+                android.util.Log.d("KangNaengWidget", "Scheduled EXACT midnight alarm for: ${calendar.time}")
+            } catch (e: SecurityException) {
+                // Fallback for Android 12+ without permission
+                android.util.Log.w("KangNaengWidget", "Exact alarm permission missing. Falling back to inexact alarm.")
+                alarmManager.set(
+                    android.app.AlarmManager.RTC_WAKEUP,
+                    calendar.timeInMillis,
+                    pendingIntent
+                )
+            }
+        }
+
+        private fun cancelMidnightAlarm(context: Context) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? android.app.AlarmManager ?: return
+            val intent = Intent(context, ScheduleWidgetProvider::class.java).apply {
+                action = ACTION_AUTO_UPDATE_MIDNIGHT
+            }
+            val pendingIntent = PendingIntent.getBroadcast(
+                context, 
+                0, 
+                intent, 
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            alarmManager.cancel(pendingIntent)
+        }
+
         fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
             try {
                 android.util.Log.d("KangNaengWidget", "updateAppWidget called for ID: $appWidgetId")
@@ -58,15 +145,30 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
                 val views = RemoteViews(context.packageName, R.layout.widget_schedule_layout)
 
                 if (widgetData != null) {
-                    // Bind Header Data
-                    val date = widgetData.formattedDate ?: "오늘"
-                    android.util.Log.d("KangNaengWidget", "Setting date text to: $date")
-                    views.setTextViewText(R.id.widget_date, date)
+                    // Update Date Display based on CURRENT system time, not just what's in widgetData
+                    // widgetData.formattedDate might be old (from when RN last ran).
+                    // Let's re-format current date here for accuracy.
+                    val now = java.util.Calendar.getInstance()
+                    val month = now.get(java.util.Calendar.MONTH) + 1
+                    val day = now.get(java.util.Calendar.DAY_OF_MONTH)
+                    val dayOfWeekStr = when(now.get(java.util.Calendar.DAY_OF_WEEK)) {
+                        1 -> "일"
+                        2 -> "월"
+                        3 -> "화"
+                        4 -> "수"
+                        5 -> "목"
+                        6 -> "금"
+                        7 -> "토"
+                        else -> ""
+                    }
+                    val dateStr = "${month}월 ${day}일 ($dayOfWeekStr)"
+                    
+                    android.util.Log.d("KangNaengWidget", "Setting date text to: $dateStr")
+                    views.setTextViewText(R.id.widget_date, dateStr)
                     views.setTextViewText(R.id.widget_updated_at, widgetData.updatedAtDisplay ?: "")
 
                     // Filter for Empty State Logic (Today)
-                    val calendar = java.util.Calendar.getInstance()
-                    val dayOfWeek = calendar.get(java.util.Calendar.DAY_OF_WEEK) - 1
+                    val dayOfWeek = now.get(java.util.Calendar.DAY_OF_WEEK) - 1 // 0=Sun...
                     val todayItems = widgetData.classes?.filter { it.day == dayOfWeek } ?: emptyList()
 
                     // Handle Empty State
