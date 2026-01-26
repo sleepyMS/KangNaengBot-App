@@ -66,8 +66,14 @@ class FullScheduleWidgetProvider : AppWidgetProvider() {
                     
                     android.util.Log.d("KangNaengWidget", "FullProvider: Drawing bitmap size ${widthPx}x${heightPx} for ${widgetData.classes.size} classes")
 
+                    // DETECT SYSTEM THEME
+                    // Instead of relying on RN data, check the current Android interaction context.
+                    val nightModeFlags = context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                    val isNightMode = nightModeFlags == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                    val themeName = if (isNightMode) "dark" else "light"
+
                     val drawer = TimetableDrawer(context)
-                    val bitmap = drawer.drawTimetable(widgetData.classes, widthPx, heightPx)
+                    val bitmap = drawer.drawTimetable(widgetData.classes, widthPx, heightPx, themeName)
 
                     views.setImageViewBitmap(R.id.widget_timetable_image, bitmap)
                     views.setViewVisibility(R.id.widget_empty_text, View.GONE)

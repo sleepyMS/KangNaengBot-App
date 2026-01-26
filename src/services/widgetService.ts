@@ -2,7 +2,7 @@
  * Widget Service
  * React Native ↔ Android Widget 간의 데이터 변환 및 통신을 담당합니다.
  */
-import { NativeModules, Platform } from 'react-native';
+import { NativeModules, Platform, Appearance } from 'react-native';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 
@@ -33,6 +33,7 @@ interface WidgetData {
   formattedDate: string;
   classes: WidgetClassItem[]; // Renamed from todayClasses
   isEmpty: boolean;
+  theme: string; // 'light' | 'dark'
 }
 
 interface WidgetClassItem {
@@ -180,11 +181,14 @@ export const widgetService = {
       }
 
       // WidgetData 생성
+      const currentTheme = Appearance.getColorScheme() || 'light';
+
       const widgetData: WidgetData = {
         updatedAtDisplay: `업데이트: ${now.format('A h:mm')}`,
         formattedDate: now.format('M월 D일 (ddd)'),
         isEmpty: allClasses.length === 0,
         classes: allClasses, // Renamed key to match Kotlin
+        theme: currentTheme,
       };
 
       console.log(

@@ -4,7 +4,8 @@ data class WidgetData(
     val updatedAtDisplay: String? = null,
     val formattedDate: String? = null,
     val classes: List<WidgetClassItem>? = null, // Renamed from todayClasses
-    val isEmpty: Boolean = true
+    val isEmpty: Boolean = true,
+    val theme: String? = "light" // "light" or "dark"
 )
 
 data class WidgetClassItem(
