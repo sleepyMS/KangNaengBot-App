@@ -45,6 +45,8 @@ interface WidgetClassItem {
   day: number;
   startTime: number;
   endTime: number;
+  colIndex: number;
+  maxCols: number;
 }
 
 export const widgetService = {
@@ -72,6 +74,13 @@ export const widgetService = {
         sat: 6,
       };
 
+      // 1. Flatten to intermediate structure
+      // We will perform overlap calculation per day.
+      const rawSlotsByDay: { [key: number]: WidgetClassItem[] } = {};
+      for (let i = 0; i <= 6; i++) {
+        rawSlotsByDay[i] = [];
+      }
+
       rawList.forEach((course: any) => {
         if (!course.slots || course.slots.length === 0) return;
 
@@ -81,16 +90,17 @@ export const widgetService = {
           const [startH, startM] = slot.startTime.split(':').map(Number);
           const [endH, endM] = slot.endTime.split(':').map(Number);
 
-          // day string to int conversion
           const dayInt =
             typeof slot.day === 'string'
               ? dayMap[slot.day.toLowerCase()]
               : slot.day;
 
-          // Check if dayInt is valid number (0-6)
           if (typeof dayInt !== 'number' || isNaN(dayInt)) return;
 
-          allClasses.push({
+          const startTotal = startH * 60 + startM;
+          const endTotal = endH * 60 + endM;
+
+          rawSlotsByDay[dayInt].push({
             id: course.id,
             title: course.name,
             location: slot.location || course.room || '강의실 미정',
@@ -98,11 +108,76 @@ export const widgetService = {
             color: course.color || '#6366f1',
             deepLink: `kangnaeng://class/${course.id}`,
             day: dayInt,
-            startTime: startH * 60 + startM,
-            endTime: endH * 60 + endM,
+            startTime: startTotal,
+            endTime: endTotal,
+            colIndex: 0,
+            maxCols: 1,
           });
         });
       });
+
+      // 2. Algorithm to assign columns (Ported from FE)
+      for (let d = 0; d <= 6; d++) {
+        const slots = rawSlotsByDay[d];
+        if (slots.length === 0) continue;
+
+        // Sort by start time
+        slots.sort((a, b) => a.startTime - b.startTime);
+
+        const activeSlots: { item: WidgetClassItem; columnIndex: number }[] =
+          [];
+
+        slots.forEach(item => {
+          // Filter out slots that have ended
+          // item starts >= active.end -> no overlap
+          const stillActive = activeSlots.filter(
+            active => active.item.endTime > item.startTime,
+          );
+
+          // Find lowest available column index
+          const usedColumns = new Set(stillActive.map(s => s.columnIndex));
+          let columnIndex = 0;
+          while (usedColumns.has(columnIndex)) {
+            columnIndex++;
+          }
+
+          item.colIndex = columnIndex;
+
+          // Re-populate activeSlots
+          activeSlots.length = 0;
+          activeSlots.push(...stillActive);
+          activeSlots.push({ item, columnIndex });
+
+          // Second Pass: Calculate maxCols for each overlapping cluster
+          // Determine the total number of columns needed for a visual row by checking overlapping neighbors.
+          // For a given item, maxCols = max(colIndex of any overlapping item) + 1.
+        }); // Close forEach
+
+        for (let i = 0; i < slots.length; i++) {
+          const current = slots[i];
+          let maxColIndex = current.colIndex;
+
+          // Check all others for overlap
+          for (let j = 0; j < slots.length; j++) {
+            if (i === j) continue;
+            const other = slots[j];
+
+            // Overlap condition
+            if (
+              current.startTime < other.endTime &&
+              other.startTime < current.endTime
+            ) {
+              if (other.colIndex > maxColIndex) {
+                maxColIndex = other.colIndex;
+              }
+            }
+          }
+          current.maxCols = maxColIndex + 1;
+        }
+
+        // Push processed items to main list
+        allClasses.push(...slots);
+      }
 
       // WidgetData 생성
       const widgetData: WidgetData = {

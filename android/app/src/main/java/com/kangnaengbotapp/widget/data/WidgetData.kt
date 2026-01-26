@@ -18,5 +18,9 @@ data class WidgetClassItem(
     // New fields for Grid View
     val day: Int? = 0,               // 0=Sun, 1=Mon, ..., 6=Sat
     val startTime: Int? = 0,         // Minutes from 00:00 (e.g. 540 for 9:00)
-    val endTime: Int? = 0            // Minutes from 00:00
+    val endTime: Int? = 0,           // Minutes from 00:00
+    
+    // Layout Info for Overlaps
+    val colIndex: Int? = 0,          // Current column index (0-based)
+    val maxCols: Int? = 1            // Total columns in this time slot
 )

@@ -187,13 +187,18 @@ class TimetableDrawer(private val context: Context) {
                 val heightBlock = duration * (cellHeightPx / 60)
                 
                 // X Position
-                val leftX = timeColWidthPx + (dayIndex * cellWidthPx)
+                // Overlap Logic: Divide cellWidth by maxCols
+                val maxCols = (item.maxCols ?: 1).coerceAtLeast(1)
+                val colIndex = (item.colIndex ?: 0).coerceAtLeast(0)
+                
+                val subCellWidth = cellWidthPx / maxCols
+                val leftX = timeColWidthPx + (dayIndex * cellWidthPx) + (colIndex * subCellWidth)
                 
                 val padding = 1f * density // 1dp gap
                 val rect = RectF(
                     leftX + padding, 
                     topY + padding, 
-                    leftX + cellWidthPx - padding, 
+                    leftX + subCellWidth - padding, 
                     topY + heightBlock - padding
                 )
 
