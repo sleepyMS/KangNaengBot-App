@@ -83,30 +83,71 @@ export const widgetService = {
       }
 
       rawList.forEach((course: any) => {
-        if (!course.slots || course.slots.length === 0) return;
+        // Validation 1: Check slots array
+        if (
+          !course.slots ||
+          !Array.isArray(course.slots) ||
+          course.slots.length === 0
+        )
+          return;
 
         course.slots.forEach((slot: any) => {
+          // Validation 2: Check required fields
           if (!slot.startTime || !slot.endTime) return;
+
+          // Validation 3: Check Time Format (HH:mm)
+          const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+          if (
+            !timeRegex.test(slot.startTime) ||
+            !timeRegex.test(slot.endTime)
+          ) {
+            console.warn(
+              `[WidgetService] Invalid time format: ${slot.startTime} ~ ${slot.endTime}`,
+            );
+            return;
+          }
 
           const [startH, startM] = slot.startTime.split(':').map(Number);
           const [endH, endM] = slot.endTime.split(':').map(Number);
 
-          const dayInt =
-            typeof slot.day === 'string'
-              ? dayMap[slot.day.toLowerCase()]
-              : slot.day;
+          // Validation 4: Check Day
+          let dayInt = -1;
+          if (typeof slot.day === 'string') {
+            const lowerDay = slot.day.toLowerCase();
+            if (dayMap.hasOwnProperty(lowerDay)) {
+              dayInt = dayMap[lowerDay];
+            }
+          } else if (typeof slot.day === 'number') {
+            dayInt = slot.day;
+          }
 
-          if (typeof dayInt !== 'number' || isNaN(dayInt)) return;
+          if (dayInt < 0 || dayInt > 6 || isNaN(dayInt)) {
+            console.warn(`[WidgetService] Invalid day: ${slot.day}`);
+            return;
+          }
 
           const startTotal = startH * 60 + startM;
           const endTotal = endH * 60 + endM;
 
+          if (startTotal >= endTotal) {
+            console.warn(
+              `[WidgetService] Start time must be before end time: ${slot.startTime} >= ${slot.endTime}`,
+            );
+            return;
+          }
+
+          // Validation 5: Color Hex
+          let color = course.color || '#6366f1';
+          if (!/^#([0-9A-F]{3}){1,2}$/i.test(color)) {
+            color = '#6366f1'; // Fallback
+          }
+
           rawSlotsByDay[dayInt].push({
             id: course.id,
-            title: course.name,
+            title: course.name || '수업',
             location: slot.location || course.room || '강의실 미정',
             timeDisplay: `${slot.startTime} - ${slot.endTime}`,
-            color: course.color || '#6366f1',
+            color: color,
             deepLink: `kangnaeng://class/${course.id}`,
             day: dayInt,
             startTime: startTotal,
