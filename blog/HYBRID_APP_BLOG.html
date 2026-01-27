@@ -95,6 +95,9 @@
       <li>네이티브 기능(홈 위젯, 푸시 알림) 제공 불가</li>
     </ul>
   </div>
+  [##_Image|kage@wDUiR/dJMcaajOaeV/AAAAAAAAAAAAAAAAAAAAAJDI0DtGrrIfqZW4dqUKFOHoDuVHvKy6T317rkSFhBT5/img.jpg?credential=yqXZFxpELC7KVnFOS48ylbz2pIh7yKj8&amp;expires=1769871599&amp;allow_ip=&amp;allow_referer=&amp;signature=rrmvHgN4GDMjLzICLYRvwpihyAs%3D|CDM|1.3|{"originWidth":1280,"originHeight":2625,"style":"alignCenter","width":245,"height":502,"alt":"인앱
+  브라우저에서 Google OAuth 차단 화면","caption":"인앱 브라우저 Google OAuth
+  차단 화면"}_##]
   <p data-ke-size="size16">
     이 문제를 <b>근본적으로 해결</b>하기 위해 React Native 앱 개발을
     결정했습니다. 목표는 단순한 WebView 래핑이 아닌, 기존 웹앱 자산을 100%
@@ -146,8 +149,8 @@
   </table>
   <p data-ke-size="size16">
     최종적으로 <b>WebView 하이브리드 + 선택적 네이티브</b> 접근을 선택했습니다.
-    핵심 UX(인증, 위젯)만 네이티브로 구현하고, 나머지는 검증된 웹앱을 그대로
-    활용하는 전략입니다.
+    핵심 UX(인증, 위젯, 푸시 알림)만 네이티브로 구현하고, 나머지는 검증된 웹앱을
+    그대로 활용하는 전략입니다.
   </p>
   <div
     class="highlight-box"
@@ -179,7 +182,7 @@
       FE의 RouteGuard가 "미인증 상태"로 판단
     </p>
   </blockquote>
-  <h3 data-ke-size="size23">2. Web ↔ Native 양방향 상태 동기화</h3>
+  <h3 data-ke-size="size23">2. Web &harr; Native 양방향 상태 동기화</h3>
   <p data-ke-size="size16">
     하이브리드 앱의 핵심 난제는 <b>두 세계의 상태를 동기화</b>하는 것입니다.
   </p>
@@ -193,12 +196,12 @@
     </thead>
     <tbody>
       <tr>
-        <td>&nbsp;Native → Web</td>
+        <td>&nbsp;Native &rarr; Web</td>
         <td>&nbsp;Access Token, 유저 정보, 테마, 언어</td>
         <td>&nbsp;앱 시작, 로그인 성공</td>
       </tr>
       <tr>
-        <td>&nbsp;Web → Native</td>
+        <td>&nbsp;Web &rarr; Native</td>
         <td>&nbsp;로그아웃, 세션만료, 시간표 저장</td>
         <td>&nbsp;사용자 액션, API 응답</td>
       </tr>
@@ -224,27 +227,27 @@
     사용하는 것입니다. 이 방식은 시스템 브라우저(Chrome Custom Tabs)를
     활용하므로 Google의 보안 정책을 완벽히 충족합니다.
   </p>
-  <p style="margin-bottom: 0.5rem">
+  <p style="margin-bottom: 0.5rem" data-ke-size="size16">
     <a
+      style="font-size: 0.9rem; color: #6b7280"
       href="https://github.com/sleepyMS/KangNaengBot-App/blob/main/src/services/authService.ts"
       target="_blank"
       rel="noopener noreferrer"
-      style="font-size: 0.9rem; color: #6b7280"
     >
-      📄 src/services/authService.ts → GitHub에서 보기
+      📄 src/services/authService.ts &rarr; GitHub에서 보기
     </a>
   </p>
   <pre class="typescript"><code>// authService.ts - 네이티브 Google 로그인
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
 
-export const configureGoogleSignIn = (): void => {
+export const configureGoogleSignIn = (): void =&gt; {
   GoogleSignin.configure({
     webClientId: Config.GOOGLE_WEB_CLIENT_ID,
     offlineAccess: true, // refresh token 발급
   });
 };
 
-export const signInWithGoogle = async () => {
+export const signInWithGoogle = async () =&gt; {
   await GoogleSignin.hasPlayServices();
   const response = await GoogleSignin.signIn();
   
@@ -270,20 +273,21 @@ export const signInWithGoogle = async () => {
     localStorage에 토큰을 미리 주입합니다.
   </p>
   <h4 data-ke-size="size20">💻 토큰 사전 주입 (FOUC 방지)</h4>
-  <p style="margin-bottom: 0.5rem">
+  <p style="margin-bottom: 0.5rem" data-ke-size="size16">
     <a
+      style="font-size: 0.9rem; color: #6b7280"
       href="https://github.com/sleepyMS/KangNaengBot-App/blob/main/src/components/WebViewContainer.tsx#L190-L302"
       target="_blank"
       rel="noopener noreferrer"
-      style="font-size: 0.9rem; color: #6b7280"
     >
-      📄 src/components/WebViewContainer.tsx → GitHub에서 보기
+      📄 src/components/WebViewContainer.tsx &rarr; GitHub에서 보기
     </a>
   </p>
   <pre
     class="typescript"
+    data-ke-language="typescript"
   ><code>// WebViewContainer.tsx - 페이지 로드 전 토큰 주입
-const injectedJavaScriptBeforeContentLoaded = React.useMemo(() => {
+const injectedJavaScriptBeforeContentLoaded = React.useMemo(() =&gt; {
   return `
     (function() {
       // 앱 환경 표시 (FE에서 감지)
@@ -311,7 +315,7 @@ const injectedJavaScriptBeforeContentLoaded = React.useMemo(() => {
         }
       ` : ''}
       
-      // 네이티브 → 웹 메시지 전송 헬퍼
+      // 네이티브 &rarr; 웹 메시지 전송 헬퍼
       window.sendToNative = function(type, payload) {
         window.ReactNativeWebView?.postMessage(JSON.stringify({ type, payload }));
       };
@@ -321,46 +325,46 @@ const injectedJavaScriptBeforeContentLoaded = React.useMemo(() => {
   `;
 }, [accessToken, isGuest, colorScheme]);</code></pre>
   <h4 data-ke-size="size20">💻 양방향 브릿지 메시지 처리</h4>
-  <p style="margin-bottom: 0.5rem">
+  <p style="margin-bottom: 0.5rem" data-ke-size="size16">
     <a
+      style="font-size: 0.9rem; color: #6b7280"
       href="https://github.com/sleepyMS/KangNaengBot-App/blob/main/src/components/WebViewContainer.tsx#L360-L420"
       target="_blank"
       rel="noopener noreferrer"
-      style="font-size: 0.9rem; color: #6b7280"
     >
-      📄 src/components/WebViewContainer.tsx → GitHub에서 보기
+      📄 src/components/WebViewContainer.tsx &rarr; GitHub에서 보기
     </a>
   </p>
   <pre
     class="typescript"
   ><code>// WebViewContainer.tsx - 웹에서 오는 메시지 처리
-const handleMessage = useCallback((event: WebViewMessageEvent) => {
+const handleMessage = useCallback((event: WebViewMessageEvent) =&gt; {
   const message = JSON.parse(event.nativeEvent.data);
   
   switch (message.type) {
     case 'SCHEDULE_SAVED':
-      // 시간표 저장 → 위젯 업데이트
+      // 시간표 저장 &rarr; 위젯 업데이트
       widgetService.updateWidget(message.payload);
       break;
       
     case 'LOGOUT':
-      // 웹에서 로그아웃 → 위젯 초기화 + 네이티브 상태 초기화
+      // 웹에서 로그아웃 &rarr; 위젯 초기화 + 네이티브 상태 초기화
       widgetService.clearWidget();
       onLogout?.();
       break;
       
     case 'SESSION_EXPIRED':
-      // 401 응답 감지 → 토큰 갱신 시도 또는 로그아웃
+      // 401 응답 감지 &rarr; 토큰 갱신 시도 또는 로그아웃
       onSessionExpired?.();
       break;
       
     case 'REQUEST_LOGIN':
-      // 게스트 모드에서 로그인 요청 → 네이티브 로그인 화면
+      // 게스트 모드에서 로그인 요청 &rarr; 네이티브 로그인 화면
       onRequestLogin?.();
       break;
       
     case 'THEME_CHANGED':
-      // 웹에서 테마 변경 → 네이티브 상태 동기화
+      // 웹에서 테마 변경 &rarr; 네이티브 상태 동기화
       useSettingsStore.getState().setTheme(message.payload.theme);
       break;
   }
@@ -368,25 +372,26 @@ const handleMessage = useCallback((event: WebViewMessageEvent) => {
   <hr data-ke-style="style1" />
   <h3 data-ke-size="size23">해결책 3: Android 홈 위젯 연동</h3>
   <p data-ke-size="size16">
-    사용자가 시간표를 저장하면, WebView에서 <code>SCHEDULE_SAVED</code> 메시지가
-    전송되고, React Native가 이를 Kotlin 네이티브 모듈로 전달합니다.
+    사용자가 대표 시간표를 저장하면, WebView에서
+    <code>SCHEDULE_SAVED</code> 메시지가 전송되고, React Native가 이를 Kotlin
+    네이티브 모듈로 전달합니다.
   </p>
   <h4 data-ke-size="size20">💻 위젯 데이터 변환 및 전송</h4>
-  <p style="margin-bottom: 0.5rem">
+  <p style="margin-bottom: 0.5rem" data-ke-size="size16">
     <a
+      style="font-size: 0.9rem; color: #6b7280"
       href="https://github.com/sleepyMS/KangNaengBot-App/blob/main/src/services/widgetService.ts"
       target="_blank"
       rel="noopener noreferrer"
-      style="font-size: 0.9rem; color: #6b7280"
     >
-      📄 src/services/widgetService.ts → GitHub에서 보기
+      📄 src/services/widgetService.ts &rarr; GitHub에서 보기
     </a>
   </p>
   <pre
     class="typescript"
   ><code>// widgetService.ts - 시간표 데이터를 위젯 포맷으로 변환
 export const widgetService = {
-  updateWidget: async (scheduleData: ScheduleData) => {
+  updateWidget: async (scheduleData: ScheduleData) =&gt; {
     if (Platform.OS !== 'android') return;
     
     const now = dayjs();
@@ -394,8 +399,8 @@ export const widgetService = {
     
     // 1. 수업 데이터 검증 및 변환
     const allClasses: WidgetClassItem[] = [];
-    rawList.forEach((course) => {
-      course.slots?.forEach((slot) => {
+    rawList.forEach((course) =&gt; {
+      course.slots?.forEach((slot) =&gt; {
         // 시간 포맷 검증, 요일 매핑, 색상 검증 등
         allClasses.push({
           id: course.id,
@@ -426,14 +431,14 @@ export const widgetService = {
   },
 };</code></pre>
   <h4 data-ke-size="size20">💻 Kotlin 위젯 구현</h4>
-  <p style="margin-bottom: 0.5rem">
+  <p style="margin-bottom: 0.5rem" data-ke-size="size16">
     <a
+      style="font-size: 0.9rem; color: #6b7280"
       href="https://github.com/sleepyMS/KangNaengBot-App/blob/main/android/app/src/main/java/com/kangnaengbotapp/widget/ScheduleWidgetProvider.kt"
       target="_blank"
       rel="noopener noreferrer"
-      style="font-size: 0.9rem; color: #6b7280"
     >
-      📄 android/.../widget/ScheduleWidgetProvider.kt → GitHub에서 보기
+      📄 android/.../widget/ScheduleWidgetProvider.kt &rarr; GitHub에서 보기
     </a>
   </p>
   <pre class="kotlin"><code>// ScheduleWidgetProvider.kt - Android 홈 위젯
@@ -485,21 +490,21 @@ class ScheduleWidgetProvider : AppWidgetProvider() {
     Android 백버튼을 WebView 내부 라우팅과 연동하되, 앱 상태(백그라운드 전환)에
     따른 리스너 재등록을 처리했습니다.
   </p>
-  <p style="margin-bottom: 0.5rem">
+  <p style="margin-bottom: 0.5rem" data-ke-size="size16">
     <a
+      style="font-size: 0.9rem; color: #6b7280"
       href="https://github.com/sleepyMS/KangNaengBot-App/blob/main/src/components/WebViewContainer.tsx#L560-L620"
       target="_blank"
       rel="noopener noreferrer"
-      style="font-size: 0.9rem; color: #6b7280"
     >
-      📄 src/components/WebViewContainer.tsx → GitHub에서 보기
+      📄 src/components/WebViewContainer.tsx &rarr; GitHub에서 보기
     </a>
   </p>
   <pre class="typescript"><code>// WebViewContainer.tsx - 백버튼 처리
-React.useEffect(() => {
+React.useEffect(() =&gt; {
   if (Platform.OS !== 'android') return;
   
-  const onBackPress = () => {
+  const onBackPress = () =&gt; {
     // WebView에 백버튼 이벤트 전달
     webViewRef.current?.postMessage(JSON.stringify({
       type: 'HARDWARE_BACK_PRESS',
@@ -510,13 +515,13 @@ React.useEffect(() => {
   const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
   
   // 앱이 포그라운드로 돌아올 때 리스너 재등록
-  const appStateSubscription = AppState.addEventListener('change', (state) => {
+  const appStateSubscription = AppState.addEventListener('change', (state) =&gt; {
     if (state === 'active') {
       // 리스너 새로 등록
     }
   });
   
-  return () => {
+  return () =&gt; {
     subscription.remove();
     appStateSubscription.remove();
   };
@@ -525,6 +530,84 @@ React.useEffect(() => {
     웹(FE) 측에서는 이 이벤트를 받아 사이드바 닫기, 모달 닫기, 뒤로가기, 또는 앱
     종료를 순차적으로 처리합니다.
   </p>
+  <hr data-ke-style="style1" />
+  <h3 data-ke-size="size23">해결책 5: 수업 시작 전 푸시 알림</h3>
+  <p data-ke-size="size16">
+    네이티브 앱의 가장 큰 강점 중 하나는 <b>푸시 알림</b>입니다. 웹앱에서는
+    브라우저가 닫혀 있으면 알림을 받을 수 없지만, 네이티브 앱은 백그라운드에서도
+    정확한 시간에 알림을 전달할 수 있습니다.
+  </p>
+  <div
+    class="highlight-box"
+    style="
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border-color: #fcd34d;
+    "
+  >
+    <h4 style="color: #d97706; margin-top: 0" data-ke-size="size20">
+      🔔 푸시 알림 구현 핵심
+    </h4>
+    <ul style="margin-top: 1rem; margin-bottom: 0" data-ke-list-type="disc">
+      <li><b>AlarmManager</b>: Android 시스템 알람으로 정확한 시간에 트리거</li>
+      <li><b>위젯 데이터 연동</b>: 시간표 저장 시 알림도 자동 스케줄링</li>
+      <li><b>시스템 이벤트 대응</b>: 부팅, 시간대 변경 시 알람 재등록</li>
+    </ul>
+  </div>
+  <p data-ke-size="size16">
+    사용자가 시간표를 저장하면 위젯 업데이트와 함께
+    <code>NotificationScheduler</code>가 오늘의 수업 알림을 스케줄링합니다.
+    자정에는 자동으로 다음 날 알림이 갱신됩니다.
+  </p>
+  <p style="margin-bottom: 0.5rem" data-ke-size="size16">
+    <a
+      style="font-size: 0.9rem; color: #6b7280"
+      href="https://github.com/sleepyMS/KangNaengBot-App/blob/main/android/app/src/main/java/com/kangnaengbotapp/notification/NotificationScheduler.kt"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      📄 android/.../notification/NotificationScheduler.kt &rarr; GitHub에서
+      보기
+    </a>
+  </p>
+  <pre
+    class="kotlin"
+  ><code>// NotificationScheduler.kt - 수업 알림 스케줄링 (핵심 로직)
+object NotificationScheduler {
+    fun scheduleTodayAlarms(context: Context) {
+        val repository = WidgetRepository(context)
+        val widgetData = repository.getScheduleData() ?: return
+        
+        // 오늘 요일의 수업만 필터링
+        val today = Calendar.getInstance().get(Calendar.DAY_OF_WEEK) - 1
+        val todayClasses = widgetData.classes?.filter { it.day == today } ?: return
+        
+        todayClasses.forEach { classItem -&gt;
+            // 수업 시작 10분 전 알림 예약
+            val triggerTime = calculateTriggerTime(classItem.startTime)
+            scheduleAlarm(context, classItem, triggerTime)
+        }
+    }
+    
+    private fun scheduleAlarm(context: Context, classItem: WidgetClassItem, triggerTime: Long) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(context, NotificationReceiver::class.java).apply {
+            putExtra("title", classItem.title)
+            putExtra("location", classItem.location)
+        }
+        
+        alarmManager.setExactAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            triggerTime,
+            PendingIntent.getBroadcast(context, classItem.id.hashCode(), intent, flags)
+        )
+    }
+}</code></pre>
+  <blockquote data-ke-style="style2">
+    <p data-ke-size="size16">
+      💡 <b>Tip</b>: 위젯과 푸시 알림 구현의 자세한 내용(권한 처리, 알림 채널
+      설정, RemoteViewsService 등)은 별도 포스트에서 다룰 예정입니다.
+    </p>
+  </blockquote>
   <hr data-ke-style="style1" />
   <h2 id="section-results" data-ke-size="size26">📈 개선 결과</h2>
   <table data-ke-align="alignLeft">
@@ -537,7 +620,7 @@ React.useEffect(() => {
     </thead>
     <tbody>
       <tr>
-        <td>&nbsp;카카오톡 공유 → 로그인</td>
+        <td>&nbsp;카카오톡 공유 &rarr; 로그인</td>
         <td>&nbsp;외부 브라우저 리다이렉트 필요</td>
         <td><b>&nbsp;앱 설치 시 원클릭 로그인</b></td>
       </tr>
@@ -648,16 +731,6 @@ React.useEffect(() => {
         href="https://github.com/sleepyMS/KangNaengBot-App"
         >KangNaengBot-App</a
       ></span
-    >
-  </p>
-  <p style="color: #333333; text-align: start" data-ke-size="size16">
-    <b>📱 배포</b>:
-    <a
-      title="Google Play Store"
-      href="https://play.google.com/store/apps/details?id=com.kangnaengbotapp"
-      target="_blank"
-      rel="noopener noreferrer"
-      >Google Play Store</a
     >
   </p>
 </div>

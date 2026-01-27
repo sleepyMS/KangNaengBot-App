@@ -4,39 +4,44 @@
 
 ```mermaid
 flowchart TB
-    subgraph Native["📱 React Native Layer"]
-        Login["LoginScreen\n(네이티브 Google OAuth)"]
-        Auth["authService\n(토큰 관리)"]
-        WebView["WebViewContainer\n(브릿지 핸들러)"]
-        Widget["widgetService\n(위젯 데이터 변환)"]
+    subgraph Native["📱 React Native"]
+        direction TB
+        Login["LoginScreen"]
+        Auth["authService"]
+        WebView["WebViewContainer"]
+        Widget["widgetService"]
     end
 
     subgraph Bridge["🌉 WebView Bridge"]
-        Inject["injectedJavaScriptBeforeContentLoaded\n(토큰 사전 주입)"]
-        Native2Web["Native → Web\n(postMessage)"]
-        Web2Native["Web → Native\n(onMessage)"]
+        direction TB
+        Inject["토큰 사전 주입"]
+        Native2Web["Native → Web"]
+        Web2Native["Web → Native"]
     end
 
-    subgraph WebApp["🌐 React Web App (FE)"]
-        RouteGuard["RouteGuard\n(인증 상태 검사)"]
-        ChatPage["ChatPage\n(메인 UI)"]
-        Settings["Settings\n(테마/언어)"]
+    subgraph WebApp["🌐 React Web App"]
+        direction TB
+        RouteGuard["RouteGuard"]
+        ChatPage["ChatPage"]
+        Settings["Settings"]
     end
 
-    subgraph Android["🤖 Android Native (Kotlin)"]
+    subgraph Android["🤖 Android Native"]
+        direction TB
         WidgetProvider["ScheduleWidgetProvider"]
-        WidgetModule["WidgetModule\n(RN Bridge)"]
+        WidgetModule["WidgetModule"]
         SharedPrefs["SharedPreferences"]
     end
 
     subgraph Backend["☁️ Backend"]
+        direction TB
         API["Django REST API"]
         DB[(PostgreSQL)]
     end
 
     Login --> Auth
-    Auth -->|"idToken"| API
-    API -->|"accessToken"| Auth
+    Auth -->|idToken| API
+    API -->|accessToken| Auth
     Auth --> WebView
 
     WebView --> Inject
@@ -48,12 +53,18 @@ flowchart TB
     Native2Web <--> ChatPage
     Web2Native <--> ChatPage
 
-    ChatPage -->|"SCHEDULE_SAVED"| Widget
+    ChatPage -->|SCHEDULE_SAVED| Widget
     Widget --> WidgetModule
     WidgetModule --> SharedPrefs
     SharedPrefs --> WidgetProvider
 
-    Settings -->|"THEME_CHANGED"| WebView
+    Settings -->|THEME_CHANGED| WebView
+
+    style Native fill:#dbeafe,stroke:#2563eb
+    style Bridge fill:#fef3c7,stroke:#d97706
+    style WebApp fill:#dcfce7,stroke:#16a34a
+    style Android fill:#f3e8ff,stroke:#7c3aed
+    style Backend fill:#fee2e2,stroke:#dc2626
 ```
 
 ## 2. 인증 플로우 (네이티브 OAuth)
