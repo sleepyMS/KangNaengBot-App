@@ -1,0 +1,951 @@
+<!-- Tistory Blog Post Content --><!-- Copy content below into Tistory HTML Editor -->
+<div class="kangnaeng-tech-blog">
+  <div style="display: flex; gap: 1rem; margin: 1.5rem 0; flex-wrap: wrap">
+    <a
+      class="link-btn link-btn-github"
+      href="https://github.com/sleepyMS/KangNaengBot-App"
+      target="_blank"
+      rel="noopener noreferrer"
+      >📂 GitHub 저장소</a
+    ><a
+      class="link-btn link-btn-demo"
+      href="https://play.google.com/store/apps/details?id=com.kangnaengbotapp"
+      target="_blank"
+      rel="noopener noreferrer"
+      >📱 Google Play</a
+    ><a
+      class="link-btn link-btn-portfolio"
+      href="https://ms-mind.vercel.app/"
+      target="_blank"
+      rel="noopener noreferrer"
+      >💼 포트폴리오</a
+    >
+  </div>
+  <blockquote data-ke-style="style2">
+    <p data-ke-size="size16">
+      기존 React 웹앱의 <b>인앱 브라우저 제한</b>을 React Native 하이브리드
+      앱으로 <b>근본적으로 해결</b>하고, 네이티브 기능(홈 위젯, 푸시 알림)을
+      추가하여 사용자 경험을 크게 향상시킨 개발 여정을 공유합니다.
+    </p>
+  </blockquote>
+  <div style="padding: 1rem">&nbsp;</div>
+  <!-- 목차 태그 네비게이션 -->
+  <p
+    style="
+      margin: 2rem 0 0.5rem 0.25rem;
+      font-weight: bold;
+      color: #475569;
+      font-size: 1.1rem;
+    "
+    data-ke-size="size16"
+  >
+    📑 바로가기
+  </p>
+  <div class="toc-container">
+    <a
+      class="toc-tag"
+      style="background: #fee2e2; color: #dc2626"
+      href="#section-problem"
+      >🎯 문제 정의</a
+    ><a
+      class="toc-tag"
+      style="background: #e0e7ff; color: #4338ca"
+      href="#section-architecture"
+      >🔍 아키텍처 선택</a
+    ><a
+      class="toc-tag"
+      style="background: #fef3c7; color: #d97706"
+      href="#section-challenges"
+      >🔥 도전과제</a
+    ><a
+      class="toc-tag"
+      style="background: #dcfce7; color: #16a34a"
+      href="#section-solutions"
+      >💡 해결 과정</a
+    ><a
+      class="toc-tag"
+      style="background: #dbeafe; color: #2563eb"
+      href="#section-results"
+      >📈 결과</a
+    ><a
+      class="toc-tag"
+      style="background: #f3e8ff; color: #7c3aed"
+      href="#section-techstack"
+      >🛠 기술 스택</a
+    >
+  </div>
+  <hr data-ke-style="style1" />
+  <h2 id="section-problem" data-ke-size="size26">
+    🎯 문제 정의: 웹앱의 한계를 넘어
+  </h2>
+  <p data-ke-size="size16">
+    이전 글에서 카카오톡, 에브리타임 등
+    <b>인앱 브라우저에서 Google OAuth가 차단되는 문제</b>를 해결하기 위해 URL
+    스킴 기반 외부 브라우저 리다이렉트를 구현했습니다. 하지만 이는
+    <b>완전한 해결책</b>이 아니었습니다.
+  </p>
+  <div class="highlight-box">
+    <h4 data-ke-size="size20">⚠️ 기존 웹 우회 방식의 한계</h4>
+    <ul style="margin-top: 1rem; margin-bottom: 0" data-ke-list-type="disc">
+      <li>
+        iOS에서 일부 앱(인스타그램, 에브리타임 등)은 외부 브라우저 열기가
+        <b>기술적으로 불가능</b>하여 수동 안내에 의존
+      </li>
+      <li>외부 브라우저로 이동 시 <b>사용자 이탈률</b> 증가</li>
+      <li>네이티브 기능(홈 위젯, 푸시 알림) 제공 불가</li>
+    </ul>
+  </div>
+  <p data-ke-size="size16">
+    이 문제를 <b>근본적으로 해결</b>하기 위해 React Native 앱 개발을
+    결정했습니다. 목표는 단순한 WebView 래핑이 아닌, 기존 웹앱 자산을 100%
+    재사용하면서 네이티브 수준의 사용자 경험을 제공하는 것이었습니다.
+  </p>
+  <hr data-ke-style="style1" />
+  <h2 id="section-architecture" data-ke-size="size26">
+    🔍 아키텍처 선택: 왜 하이브리드인가
+  </h2>
+  <h3 data-ke-size="size23">접근 방식 비교 분석</h3>
+  <p data-ke-size="size16">
+    React Native 앱 개발에는 크게 두 가지 접근 방식이 있었습니다.
+  </p>
+  <table data-ke-align="alignLeft">
+    <thead>
+      <tr>
+        <th>&nbsp;구분</th>
+        <th>&nbsp;순수 React Native</th>
+        <th>&nbsp;WebView 하이브리드</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>&nbsp;개발 비용</b></td>
+        <td>&nbsp;높음 (전체 재작성)</td>
+        <td><b>&nbsp;낮음 (기존 코드 재사용)</b></td>
+      </tr>
+      <tr>
+        <td><b>&nbsp;유지보수</b></td>
+        <td>&nbsp;이중 관리 필요</td>
+        <td><b>&nbsp;웹앱 수정 시 앱도 자동 반영</b></td>
+      </tr>
+      <tr>
+        <td><b>&nbsp;성능</b></td>
+        <td>&nbsp;최적 (네이티브 렌더링)</td>
+        <td>&nbsp;우수 (WebView 오버헤드 존재)</td>
+      </tr>
+      <tr>
+        <td><b>&nbsp;네이티브 기능</b></td>
+        <td>&nbsp;완전 지원</td>
+        <td>&nbsp;브릿지 통해 선택적 지원</td>
+      </tr>
+      <tr>
+        <td><b>&nbsp;인증 연동</b></td>
+        <td>&nbsp;네이티브 OAuth</td>
+        <td><b>&nbsp;네이티브 OAuth + WebView 동기화</b></td>
+      </tr>
+    </tbody>
+  </table>
+  <p data-ke-size="size16">
+    최종적으로 <b>WebView 하이브리드 + 선택적 네이티브</b> 접근을 선택했습니다.
+    핵심 UX(인증, 위젯)만 네이티브로 구현하고, 나머지는 검증된 웹앱을 그대로
+    활용하는 전략입니다.
+  </p>
+  <div
+    class="highlight-box"
+    style="
+      background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+      border-color: #bbf7d0;
+    "
+  >
+    <h4 style="color: #16a34a" data-ke-size="size20">
+      ✅ 하이브리드 선택 이유
+    </h4>
+    <ul style="margin-top: 1rem; margin-bottom: 0" data-ke-list-type="disc">
+      <li><b>개발 속도</b>: 기존 React 웹앱 100% 재사용으로 빠른 출시</li>
+      <li><b>일관성</b>: 웹/앱 동일한 UI/UX, 동시 업데이트</li>
+      <li><b>네이티브 강점 확보</b>: 인증, 위젯, 알림은 네이티브로 최적화</li>
+    </ul>
+  </div>
+  <hr data-ke-style="style1" />
+  <h2 id="section-challenges" data-ke-size="size26">🔥 핵심 기술 도전과제</h2>
+  <h3 data-ke-size="size23">1. FOUC(Flash Of Unstyled Content) 방지</h3>
+  <p data-ke-size="size16">
+    가장 먼저 마주친 문제는 WebView 로드 시
+    <b>로그인 화면이 순간적으로 깜빡이는 현상</b>이었습니다. 네이티브에서 이미
+    로그인했는데, WebView가 로드되면서 잠시 로그인 페이지가 보이는 문제입니다.
+  </p>
+  <blockquote data-ke-style="style2">
+    <p data-ke-size="size16">
+      <b>원인</b>: WebView가 로드 완료 후에야 토큰을 주입할 수 있어, 그 사이
+      FE의 RouteGuard가 "미인증 상태"로 판단
+    </p>
+  </blockquote>
+  <h3 data-ke-size="size23">2. Web ↔ Native 양방향 상태 동기화</h3>
+  <p data-ke-size="size16">
+    하이브리드 앱의 핵심 난제는 <b>두 세계의 상태를 동기화</b>하는 것입니다.
+  </p>
+  <table data-ke-align="alignLeft">
+    <thead>
+      <tr>
+        <th>&nbsp;방향</th>
+        <th>&nbsp;동기화 대상</th>
+        <th>&nbsp;트리거</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&nbsp;Native → Web</td>
+        <td>&nbsp;Access Token, 유저 정보, 테마, 언어</td>
+        <td>&nbsp;앱 시작, 로그인 성공</td>
+      </tr>
+      <tr>
+        <td>&nbsp;Web → Native</td>
+        <td>&nbsp;로그아웃, 세션만료, 시간표 저장</td>
+        <td>&nbsp;사용자 액션, API 응답</td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 data-ke-size="size23">3. Android 하드웨어 백버튼 처리</h3>
+  <p data-ke-size="size16">
+    Android의 물리 백버튼은 WebView 내부의 라우팅과 연동되어야 합니다. 단순히
+    <code>canGoBack</code>에 의존하면 사이드바나 모달 같은 웹 내부 상태와
+    충돌합니다.
+  </p>
+  <h3 data-ke-size="size23">4. Kotlin 네이티브 모듈 연동</h3>
+  <p data-ke-size="size16">
+    Android 홈 위젯은 React Native에서 직접 지원하지 않습니다.
+    <b>Kotlin으로 위젯을 구현</b>하고, JavaScript와 데이터를 주고받는 브릿지를
+    설계해야 했습니다.
+  </p>
+  <hr data-ke-style="style1" />
+  <h2 id="section-solutions" data-ke-size="size26">💡 해결 과정</h2>
+  <h3 data-ke-size="size23">해결책 1: 네이티브 Google OAuth 구현</h3>
+  <p data-ke-size="size16">
+    인앱 브라우저 문제의 근본 해결책은 <b>네이티브 Google Sign-In SDK</b>를
+    사용하는 것입니다. 이 방식은 시스템 브라우저(Chrome Custom Tabs)를
+    활용하므로 Google의 보안 정책을 완벽히 충족합니다.
+  </p>
+  <p style="margin-bottom: 0.5rem">
+    <a
+      href="https://github.com/sleepyMS/KangNaengBot-App/blob/main/src/services/authService.ts"
+      target="_blank"
+      rel="noopener noreferrer"
+      style="font-size: 0.9rem; color: #6b7280"
+    >
+      📄 src/services/authService.ts → GitHub에서 보기
+    </a>
+  </p>
+  <pre class="typescript"><code>// authService.ts - 네이티브 Google 로그인
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
+
+export const configureGoogleSignIn = (): void => {
+  GoogleSignin.configure({
+    webClientId: Config.GOOGLE_WEB_CLIENT_ID,
+    offlineAccess: true, // refresh token 발급
+  });
+};
+
+export const signInWithGoogle = async () => {
+  await GoogleSignin.hasPlayServices();
+  const response = await GoogleSignin.signIn();
+  
+  if (!response.data?.idToken) {
+    throw new AuthError('ID Token을 받지 못했습니다.', 'MISSING_ID_TOKEN');
+  }
+  
+  return {
+    userInfo: {
+      id: response.data.user.id,
+      email: response.data.user.email,
+      name: response.data.user.name,
+      photo: response.data.user.photo,
+    },
+    idToken: response.data.idToken, // 백엔드 인증에 사용
+  };
+};</code></pre>
+  <hr data-ke-style="style1" />
+  <h3 data-ke-size="size23">해결책 2: WebView 브릿지 아키텍처</h3>
+  <p data-ke-size="size16">
+    FOUC를 방지하기 위해 <code>injectedJavaScriptBeforeContentLoaded</code>를
+    활용했습니다. 이 스크립트는 <b>페이지가 로드되기 전</b>에 실행되어
+    localStorage에 토큰을 미리 주입합니다.
+  </p>
+  <h4 data-ke-size="size20">💻 토큰 사전 주입 (FOUC 방지)</h4>
+  <p style="margin-bottom: 0.5rem">
+    <a
+      href="https://github.com/sleepyMS/KangNaengBot-App/blob/main/src/components/WebViewContainer.tsx#L190-L302"
+      target="_blank"
+      rel="noopener noreferrer"
+      style="font-size: 0.9rem; color: #6b7280"
+    >
+      📄 src/components/WebViewContainer.tsx → GitHub에서 보기
+    </a>
+  </p>
+  <pre
+    class="typescript"
+  ><code>// WebViewContainer.tsx - 페이지 로드 전 토큰 주입
+const injectedJavaScriptBeforeContentLoaded = React.useMemo(() => {
+  return `
+    (function() {
+      // 앱 환경 표시 (FE에서 감지)
+      window.IS_NATIVE_APP = true;
+      window.PLATFORM = '${Platform.OS}';
+      window.IS_GUEST = ${isGuest};
+      
+      // 시스템 테마 및 언어 동기화
+      window.NATIVE_THEME = '${colorScheme || 'light'}';
+      window.NATIVE_LOCALE = '${getDeviceLocale()}';
+      
+      // 토큰 사전 주입 (RouteGuard가 인증 상태로 인식)
+      ${accessToken ? `
+        localStorage.setItem('access_token', '${escapeJsString(accessToken)}');
+        
+        // Zustand persist 스토리지 직접 조작
+        const authStorage = localStorage.getItem('auth-storage');
+        if (authStorage) {
+          const data = JSON.parse(authStorage);
+          data.state = data.state || {};
+          data.state.isAuthenticated = true;
+          data.state.isLoading = true; // 핑퐁 방지
+          data.state.user = ${JSON.stringify(userForFE)};
+          localStorage.setItem('auth-storage', JSON.stringify(data));
+        }
+      ` : ''}
+      
+      // 네이티브 → 웹 메시지 전송 헬퍼
+      window.sendToNative = function(type, payload) {
+        window.ReactNativeWebView?.postMessage(JSON.stringify({ type, payload }));
+      };
+      
+      true;
+    })();
+  `;
+}, [accessToken, isGuest, colorScheme]);</code></pre>
+  <h4 data-ke-size="size20">💻 양방향 브릿지 메시지 처리</h4>
+  <p style="margin-bottom: 0.5rem">
+    <a
+      href="https://github.com/sleepyMS/KangNaengBot-App/blob/main/src/components/WebViewContainer.tsx#L360-L420"
+      target="_blank"
+      rel="noopener noreferrer"
+      style="font-size: 0.9rem; color: #6b7280"
+    >
+      📄 src/components/WebViewContainer.tsx → GitHub에서 보기
+    </a>
+  </p>
+  <pre
+    class="typescript"
+  ><code>// WebViewContainer.tsx - 웹에서 오는 메시지 처리
+const handleMessage = useCallback((event: WebViewMessageEvent) => {
+  const message = JSON.parse(event.nativeEvent.data);
+  
+  switch (message.type) {
+    case 'SCHEDULE_SAVED':
+      // 시간표 저장 → 위젯 업데이트
+      widgetService.updateWidget(message.payload);
+      break;
+      
+    case 'LOGOUT':
+      // 웹에서 로그아웃 → 위젯 초기화 + 네이티브 상태 초기화
+      widgetService.clearWidget();
+      onLogout?.();
+      break;
+      
+    case 'SESSION_EXPIRED':
+      // 401 응답 감지 → 토큰 갱신 시도 또는 로그아웃
+      onSessionExpired?.();
+      break;
+      
+    case 'REQUEST_LOGIN':
+      // 게스트 모드에서 로그인 요청 → 네이티브 로그인 화면
+      onRequestLogin?.();
+      break;
+      
+    case 'THEME_CHANGED':
+      // 웹에서 테마 변경 → 네이티브 상태 동기화
+      useSettingsStore.getState().setTheme(message.payload.theme);
+      break;
+  }
+}, [onLogout, onSessionExpired, onRequestLogin]);</code></pre>
+  <hr data-ke-style="style1" />
+  <h3 data-ke-size="size23">해결책 3: Android 홈 위젯 연동</h3>
+  <p data-ke-size="size16">
+    사용자가 시간표를 저장하면, WebView에서 <code>SCHEDULE_SAVED</code> 메시지가
+    전송되고, React Native가 이를 Kotlin 네이티브 모듈로 전달합니다.
+  </p>
+  <h4 data-ke-size="size20">💻 위젯 데이터 변환 및 전송</h4>
+  <p style="margin-bottom: 0.5rem">
+    <a
+      href="https://github.com/sleepyMS/KangNaengBot-App/blob/main/src/services/widgetService.ts"
+      target="_blank"
+      rel="noopener noreferrer"
+      style="font-size: 0.9rem; color: #6b7280"
+    >
+      📄 src/services/widgetService.ts → GitHub에서 보기
+    </a>
+  </p>
+  <pre
+    class="typescript"
+  ><code>// widgetService.ts - 시간표 데이터를 위젯 포맷으로 변환
+export const widgetService = {
+  updateWidget: async (scheduleData: ScheduleData) => {
+    if (Platform.OS !== 'android') return;
+    
+    const now = dayjs();
+    const rawList = scheduleData.courses || scheduleData.classes || [];
+    
+    // 1. 수업 데이터 검증 및 변환
+    const allClasses: WidgetClassItem[] = [];
+    rawList.forEach((course) => {
+      course.slots?.forEach((slot) => {
+        // 시간 포맷 검증, 요일 매핑, 색상 검증 등
+        allClasses.push({
+          id: course.id,
+          title: course.name || '수업',
+          location: slot.location || '강의실 미정',
+          timeDisplay: `${slot.startTime} - ${slot.endTime}`,
+          color: course.color || '#6366f1',
+          // 겹치는 수업 처리를 위한 열 정보
+          colIndex: 0,
+          maxCols: 1,
+        });
+      });
+    });
+    
+    // 2. 겹치는 수업 열 계산 (FE 알고리즘 포팅)
+    // ... 생략
+    
+    // 3. Kotlin 네이티브 모듈로 전송
+    const widgetData = {
+      updatedAtDisplay: `업데이트: ${now.format('A h:mm')}`,
+      formattedDate: now.format('M월 D일 (ddd)'),
+      classes: allClasses,
+      isEmpty: allClasses.length === 0,
+      theme: Appearance.getColorScheme() || 'light',
+    };
+    
+    WidgetModule.updateScheduleData(JSON.stringify(widgetData));
+  },
+};</code></pre>
+  <h4 data-ke-size="size20">💻 Kotlin 위젯 구현</h4>
+  <p style="margin-bottom: 0.5rem">
+    <a
+      href="https://github.com/sleepyMS/KangNaengBot-App/blob/main/android/app/src/main/java/com/kangnaengbotapp/widget/ScheduleWidgetProvider.kt"
+      target="_blank"
+      rel="noopener noreferrer"
+      style="font-size: 0.9rem; color: #6b7280"
+    >
+      📄 android/.../widget/ScheduleWidgetProvider.kt → GitHub에서 보기
+    </a>
+  </p>
+  <pre class="kotlin"><code>// ScheduleWidgetProvider.kt - Android 홈 위젯
+class ScheduleWidgetProvider : AppWidgetProvider() {
+    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, 
+                          appWidgetIds: IntArray) {
+        for (appWidgetId in appWidgetIds) {
+            updateAppWidget(context, appWidgetManager, appWidgetId)
+        }
+    }
+    
+    companion object {
+        fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager,
+                            appWidgetId: Int) {
+            // WidgetRepository 패턴으로 데이터 로드 (SharedPreferences 추상화)
+            val repository = WidgetRepository(context)
+            val widgetData = repository.getScheduleData() ?: return
+            
+            // 현재 날짜 기준 재포맷 (RN에서 받은 데이터가 오래됐을 수 있음)
+            val now = Calendar.getInstance()
+            val dateStr = "${now.get(Calendar.MONTH) + 1}월 ${now.get(Calendar.DAY_OF_MONTH)}일"
+            
+            // RemoteViews로 위젯 UI 구성
+            val views = RemoteViews(context.packageName, R.layout.widget_schedule_layout)
+            views.setTextViewText(R.id.widget_date, dateStr)
+            views.setTextViewText(R.id.widget_updated_at, widgetData.updatedAtDisplay)
+            
+            // 오늘 수업만 필터링하여 빈 상태 처리
+            val todayItems = widgetData.classes?.filter { it.day == (now.get(Calendar.DAY_OF_WEEK) - 1) }
+            if (todayItems.isNullOrEmpty()) {
+                views.setViewVisibility(R.id.widget_list_view, View.GONE)
+                views.setViewVisibility(R.id.widget_empty_view, View.VISIBLE)
+            } else {
+                views.setViewVisibility(R.id.widget_list_view, View.VISIBLE)
+                views.setViewVisibility(R.id.widget_empty_view, View.GONE)
+            }
+            
+            // ListView 어댑터 연결 (RemoteViewsService)
+            val intent = Intent(context, ScheduleRemoteViewsService::class.java)
+            views.setRemoteAdapter(R.id.widget_list_view, intent)
+            
+            appWidgetManager.updateAppWidget(appWidgetId, views)
+        }
+    }
+}</code></pre>
+  <hr data-ke-style="style1" />
+  <h3 data-ke-size="size23">해결책 4: 하드웨어 백버튼 처리</h3>
+  <p data-ke-size="size16">
+    Android 백버튼을 WebView 내부 라우팅과 연동하되, 앱 상태(백그라운드 전환)에
+    따른 리스너 재등록을 처리했습니다.
+  </p>
+  <p style="margin-bottom: 0.5rem">
+    <a
+      href="https://github.com/sleepyMS/KangNaengBot-App/blob/main/src/components/WebViewContainer.tsx#L560-L620"
+      target="_blank"
+      rel="noopener noreferrer"
+      style="font-size: 0.9rem; color: #6b7280"
+    >
+      📄 src/components/WebViewContainer.tsx → GitHub에서 보기
+    </a>
+  </p>
+  <pre class="typescript"><code>// WebViewContainer.tsx - 백버튼 처리
+React.useEffect(() => {
+  if (Platform.OS !== 'android') return;
+  
+  const onBackPress = () => {
+    // WebView에 백버튼 이벤트 전달
+    webViewRef.current?.postMessage(JSON.stringify({
+      type: 'HARDWARE_BACK_PRESS',
+    }));
+    return true; // 기본 동작(앱 종료) 방지
+  };
+  
+  const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+  
+  // 앱이 포그라운드로 돌아올 때 리스너 재등록
+  const appStateSubscription = AppState.addEventListener('change', (state) => {
+    if (state === 'active') {
+      // 리스너 새로 등록
+    }
+  });
+  
+  return () => {
+    subscription.remove();
+    appStateSubscription.remove();
+  };
+}, []);</code></pre>
+  <p data-ke-size="size16">
+    웹(FE) 측에서는 이 이벤트를 받아 사이드바 닫기, 모달 닫기, 뒤로가기, 또는 앱
+    종료를 순차적으로 처리합니다.
+  </p>
+  <hr data-ke-style="style1" />
+  <h2 id="section-results" data-ke-size="size26">📈 개선 결과</h2>
+  <table data-ke-align="alignLeft">
+    <thead>
+      <tr>
+        <th>&nbsp;시나리오</th>
+        <th>&nbsp;기존 (웹 우회)</th>
+        <th>&nbsp;개선 후 (네이티브 앱)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&nbsp;카카오톡 공유 → 로그인</td>
+        <td>&nbsp;외부 브라우저 리다이렉트 필요</td>
+        <td><b>&nbsp;앱 설치 시 원클릭 로그인</b></td>
+      </tr>
+      <tr>
+        <td>&nbsp;iOS 인앱 브라우저</td>
+        <td>&nbsp;수동 Safari 열기 안내</td>
+        <td><b>&nbsp;완전 해결 (앱 사용)</b></td>
+      </tr>
+      <tr>
+        <td>&nbsp;시간표 접근성</td>
+        <td>&nbsp;앱 실행 필요</td>
+        <td><b>&nbsp;홈 위젯으로 즉시 확인</b></td>
+      </tr>
+      <tr>
+        <td>&nbsp;수업 알림</td>
+        <td>&nbsp;불가능</td>
+        <td><b>&nbsp;수업 전 푸시 알림</b></td>
+      </tr>
+      <tr>
+        <td>&nbsp;UX 일관성</td>
+        <td>&nbsp;브라우저 전환으로 단절</td>
+        <td><b>&nbsp;네이티브 앱 경험</b></td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 data-ke-size="size23">배운 점</h3>
+  <ol style="list-style-type: decimal" data-ke-list-type="decimal">
+    <li>
+      <b>하이브리드의 힘</b>: 모든 것을 네이티브로 재작성할 필요 없이, 핵심
+      경험만 네이티브로 구현하면 개발 비용 대비 높은 가치를 얻을 수 있습니다.
+    </li>
+    <li>
+      <b>FOUC 방지의 핵심</b>:
+      <code>injectedJavaScriptBeforeContentLoaded</code>와 localStorage 직접
+      조작으로 페이지 로드 전 상태를 주입하는 것이 해결책입니다.
+    </li>
+    <li>
+      <b>브릿지 설계 원칙</b>: 메시지 타입을 명확히 정의하고, 양방향 통신의
+      책임을 분리하면 복잡도를 관리할 수 있습니다.
+    </li>
+    <li>
+      <b>네이티브 모듈 연동</b>: React Native Bridge와 SharedPreferences를 통해
+      JavaScript와 Kotlin 간 데이터를 효과적으로 공유할 수 있습니다.
+    </li>
+  </ol>
+  <hr data-ke-style="style1" />
+  <h2 id="section-techstack" data-ke-size="size26">🛠 기술 스택 요약</h2>
+  <table data-ke-align="alignLeft">
+    <thead>
+      <tr>
+        <th>&nbsp;영역</th>
+        <th>&nbsp;기술</th>
+        <th>&nbsp;활용 내용</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>&nbsp;프레임워크</td>
+        <td>&nbsp;React Native</td>
+        <td>&nbsp;하이브리드 앱 프레임워크</td>
+      </tr>
+      <tr>
+        <td>&nbsp;WebView</td>
+        <td>&nbsp;react-native-webview</td>
+        <td>&nbsp;기존 웹앱 렌더링 + 브릿지</td>
+      </tr>
+      <tr>
+        <td>&nbsp;인증</td>
+        <td>&nbsp;@react-native-google-signin</td>
+        <td>&nbsp;네이티브 Google OAuth</td>
+      </tr>
+      <tr>
+        <td>&nbsp;상태 관리</td>
+        <td>&nbsp;Zustand</td>
+        <td>&nbsp;인증/설정 상태 + persist</td>
+      </tr>
+      <tr>
+        <td>&nbsp;보안 저장소</td>
+        <td>&nbsp;EncryptedStorage</td>
+        <td>&nbsp;토큰 암호화 저장</td>
+      </tr>
+      <tr>
+        <td>&nbsp;Android 위젯</td>
+        <td>&nbsp;Kotlin + AppWidgetProvider</td>
+        <td>&nbsp;홈 화면 시간표 위젯</td>
+      </tr>
+      <tr>
+        <td>&nbsp;UI</td>
+        <td>&nbsp;react-native-linear-gradient</td>
+        <td>&nbsp;FE와 동일한 그라데이션 디자인</td>
+      </tr>
+      <tr>
+        <td>&nbsp;날짜 처리</td>
+        <td>&nbsp;dayjs</td>
+        <td>&nbsp;위젯 날짜 포맷</td>
+      </tr>
+    </tbody>
+  </table>
+  <hr data-ke-style="style1" />
+  <p data-ke-size="size16">
+    <i>웹앱의 한계를 넘어, 네이티브 앱의 강점을 더한 하이브리드 개발 여정.</i>
+  </p>
+  <p style="color: #333333; text-align: start" data-ke-size="size16">
+    <b>📂 프로젝트 저장소</b>:<span>
+      <a
+        style="color: #2563eb"
+        title="https://github.com/sleepyMS/KangNaengBot-App"
+        href="https://github.com/sleepyMS/KangNaengBot-App"
+        >KangNaengBot-App</a
+      ></span
+    >
+  </p>
+  <p style="color: #333333; text-align: start" data-ke-size="size16">
+    <b>📱 배포</b>:
+    <a
+      title="Google Play Store"
+      href="https://play.google.com/store/apps/details?id=com.kangnaengbotapp"
+      target="_blank"
+      rel="noopener noreferrer"
+      >Google Play Store</a
+    >
+  </p>
+</div>
+<div>
+  <style>
+    .kangnaeng-tech-blog {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui,
+        Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo',
+        'Malgun Gothic', sans-serif;
+      line-height: 1.75;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px 0;
+    }
+
+    .kangnaeng-tech-blog h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin-bottom: 1.5rem;
+      color: #1a1a1a;
+      letter-spacing: -0.02em;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 1rem;
+    }
+
+    .kangnaeng-tech-blog h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-top: 3rem;
+      margin-bottom: 1rem;
+      color: #2563eb;
+    }
+
+    .kangnaeng-tech-blog h3 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+      color: #1f2937;
+    }
+
+    .kangnaeng-tech-blog h4 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+      color: #374151;
+    }
+
+    .kangnaeng-tech-blog p {
+      margin-bottom: 1.25rem;
+      font-size: 1.1rem;
+      word-break: keep-all;
+    }
+
+    .kangnaeng-tech-blog blockquote {
+      background-color: #f3f4f6;
+      border-left: 5px solid #2563eb;
+      margin: 1.5rem 0;
+      padding: 1rem 1.5rem;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .kangnaeng-tech-blog blockquote p {
+      margin: 0;
+      font-weight: 500;
+      color: #4b5563;
+    }
+
+    .kangnaeng-tech-blog strong {
+      color: #2563eb;
+      background: linear-gradient(
+        120deg,
+        rgba(37, 99, 235, 0.1) 0%,
+        rgba(37, 99, 235, 0.1) 100%
+      );
+      padding: 0 4px;
+      border-radius: 3px;
+    }
+
+    .kangnaeng-tech-blog pre {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 1.5rem;
+      border-radius: 12px;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+      font-family: 'Fira Code', Consolas, Monaco, monospace;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .kangnaeng-tech-blog code {
+      font-family: 'Fira Code', Consolas, Monaco, monospace;
+    }
+
+    .kangnaeng-tech-blog p code,
+    .kangnaeng-tech-blog li code {
+      background-color: #eff6ff;
+      color: #2563eb;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+      border: 1px solid #dbeafe;
+    }
+
+    .kangnaeng-tech-blog ul,
+    .kangnaeng-tech-blog ol {
+      margin-bottom: 1.5rem;
+      padding-left: 1.5rem;
+    }
+
+    .kangnaeng-tech-blog li {
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+
+    .kangnaeng-tech-blog table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 2rem 0;
+      font-size: 1rem;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    }
+
+    .kangnaeng-tech-blog th {
+      background-color: #f8fafc;
+      font-weight: 600;
+      color: #1e293b;
+      text-align: left;
+      padding: 1rem;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .kangnaeng-tech-blog td {
+      padding: 1rem;
+      border-bottom: 1px solid #e2e8f0;
+      color: #334155;
+    }
+
+    .kangnaeng-tech-blog hr {
+      border: 0;
+      height: 1px;
+      background: linear-gradient(to right, transparent, #e5e7eb, transparent);
+      margin: 3rem 0;
+    }
+
+    .kangnaeng-tech-blog .diagram-container {
+      display: flex;
+      justify-content: center;
+      margin: 2rem 0;
+      background: #fafafa;
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+    }
+
+    .kangnaeng-tech-blog .diagram-container img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .kangnaeng-tech-blog a {
+      color: #2563eb;
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s;
+    }
+
+    .kangnaeng-tech-blog a:hover {
+      border-bottom-color: #2563eb;
+    }
+
+    .kangnaeng-tech-blog .highlight-box {
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .kangnaeng-tech-blog .highlight-box h4 {
+      margin-top: 0;
+      color: #1d4ed8;
+    }
+
+    .kangnaeng-tech-blog .highlight-box p {
+      margin-bottom: 0;
+    }
+  </style>
+</div>
+<hr
+  contenteditable="false"
+  data-ke-style="style5"
+  data-ke-type="horizontalRule"
+/>
+<p data-ke-size="size16"><b>◆ 함께 보면 좋은 글</b></p>
+<ul style="list-style-type: disc" data-ke-list-type="disc">
+  <li>
+    <span style="background-color: #e6f5ff; color: #006dd7"
+      ><b
+        ><a
+          href="https://me-in-journey.com/entry/React-%EC%9D%B8%EC%95%B1-%EB%B8%8C%EB%9D%BC%EC%9A%B0%EC%A0%80%EC%97%90%EC%84%9C-Google-OAuth-%EB%A1%9C%EA%B7%B8%EC%9D%B8-%EC%B0%A8%EB%8B%A8-%EB%AC%B8%EC%A0%9C-%ED%95%B4%EA%B2%B0%EA%B8%B0"
+          >[React] 인앱 브라우저에서 Google OAuth 로그인 차단 문제 해결기</a
+        ></b
+      ></span
+    >
+  </li>
+  <li>
+    <span style="background-color: #e6f5ff; color: #006dd7"
+      ><b
+        ><a
+          href="https://me-in-journey.com/entry/React-AI-%EC%B1%97%EB%B4%87%EC%9D%98-%EC%B2%B4%EA%B0%90-%EC%86%8D%EB%8F%84%EB%A5%BC-%EB%86%92%EC%9D%B8-%ED%94%84%EB%A1%A0%ED%8A%B8%EC%97%94%EB%93%9C-%EC%B5%9C%EC%A0%81%ED%99%94-%EC%97%AC%EC%A0%95"
+          >[React] AI 챗봇의 체감 속도를 높인 프론트엔드 최적화 여정</a
+        ></b
+      ></span
+    >
+  </li>
+</ul>
+<div>
+  <style>
+    .link-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      border: none;
+      transition: all 0.2s ease;
+      transform: translateY(0);
+    }
+    .link-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px -2px rgba(0, 0, 0, 0.25);
+      filter: brightness(1.1);
+    }
+    .link-btn-github {
+      background: #1f2937;
+      color: white !important;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+    .link-btn-demo {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: white !important;
+      box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+    }
+    .link-btn-portfolio {
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+      color: white !important;
+      box-shadow: 0 4px 6px -1px rgba(139, 92, 246, 0.3);
+    }
+    .toc-tag {
+      display: inline-block;
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    .toc-tag:hover {
+      transform: scale(1.05);
+      filter: brightness(0.95);
+    }
+    .toc-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 1.5rem 0;
+      padding: 1rem;
+      background: rgba(248, 250, 252, 0.95);
+      backdrop-filter: blur(8px);
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      align-items: center;
+      position: sticky;
+      top: 20px;
+      z-index: 100;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    h2[id^='section-'] {
+      scroll-margin-top: 100px;
+    }
+  </style>
+</div>
