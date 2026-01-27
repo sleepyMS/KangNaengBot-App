@@ -25,7 +25,6 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect } from '@react-navigation/native';
 import { Config, BridgeMessageTypes } from '../config';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useAuthStore } from '../stores/useAuthStore';
