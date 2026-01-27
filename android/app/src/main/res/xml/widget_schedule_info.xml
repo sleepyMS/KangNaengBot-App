@@ -3,7 +3,7 @@
     android:minWidth="250dp"
     android:minHeight="110dp"
     android:updatePeriodMillis="0" 
-    android:previewImage="@drawable/ic_logo_widget"
+    android:previewImage="@drawable/widget_preview_schedule"
     android:initialLayout="@layout/widget_schedule_layout"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen">
