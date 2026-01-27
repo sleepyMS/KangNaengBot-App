@@ -216,6 +216,7 @@ export const WebViewContainer = forwardRef<
             const data = JSON.parse(authStorage);
             data.state = data.state || {};
             data.state.isAuthenticated = true;
+            data.state.isGuestMode = false; // 로그인 시 게스트 모드 해제
             data.state.isLoading = true; // 중요: 초기 로딩 상태 주입하여 핑퐁 방지
             if (userFromNative) {
               data.state.user = userFromNative;
@@ -226,8 +227,41 @@ export const WebViewContainer = forwardRef<
           localStorage.setItem('auth-storage', JSON.stringify({
             state: { 
               isAuthenticated: true,
+              isGuestMode: false, // 로그인 시 게스트 모드 해제
               isLoading: true, // 초기 로딩 상태 주입
               user: userFromNative,
+            },
+            version: 0
+          }));
+        }
+      } catch (e) {
+        // Storage error handling
+      }
+      `
+        : '';
+
+      // 게스트 모드일 때 FE auth-storage 설정
+      const guestModeInjection = isGuest
+        ? `
+      try {
+        const authStorage = localStorage.getItem('auth-storage');
+        if (authStorage) {
+          try {
+            const data = JSON.parse(authStorage);
+            data.state = data.state || {};
+            data.state.isGuestMode = true;
+            data.state.isAuthenticated = false;
+            data.state.user = null;
+            data.state.profile = null;
+            localStorage.setItem('auth-storage', JSON.stringify(data));
+          } catch (e) {}
+        } else {
+          localStorage.setItem('auth-storage', JSON.stringify({
+            state: { 
+              isGuestMode: true,
+              isAuthenticated: false,
+              user: null,
+              profile: null,
             },
             version: 0
           }));
@@ -248,6 +282,9 @@ export const WebViewContainer = forwardRef<
         // 시스템 테마 및 언어 (FE에서 감지하여 적용)
         window.NATIVE_THEME = '${colorScheme || 'light'}';
         window.NATIVE_LOCALE = '${getDeviceLocale()}';
+        
+        // 게스트 모드 사전 주입 (RouteGuard에서 인식하도록)
+        ${guestModeInjection}
         
         // 토큰 사전 주입 (FOUC 방지)
         ${tokenInjection}
@@ -293,6 +330,7 @@ export const WebViewContainer = forwardRef<
               const data = JSON.parse(authStorage);
               data.state = data.state || {};
               data.state.isAuthenticated = true;
+              data.state.isGuestMode = false; // 로그인 시 게스트 모드 해제
               if (userFromNative) {
                 data.state.user = userFromNative;
               }
