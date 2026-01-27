@@ -37,6 +37,9 @@ local.properties
 .cxx/
 *.keystore
 !debug.keystore
+
+# Signing secrets
+android/gradle.properties
 .kotlin/
 
 # node.js
