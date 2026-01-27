@@ -1,97 +1,154 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# KangNaengBot-App (강냉봇 앱)
 
-# Getting Started
+강남대학교 학생들을 위한 AI 챗봇 서비스 **강냉봇**의 React Native 앱입니다.
+기존 웹앱([KangNaengBot-FE](https://github.com/sleepyMS/KangNaengBot-FE))을 100% 활용하면서, 네이티브 기능을 추가한 **하이브리드 앱**입니다.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+> 💡 **핵심 기능**: 네이티브 Google OAuth | Android 홈 위젯 | 수업 알림 | 오프라인 시간표
 
-## Step 1: Start Metro
+<br/>
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 📱 하이브리드 아키텍처
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+```
+┌─────────────────────────────────────────────────┐
+│                 React Native                     │
+│  ┌─────────────┐  ┌─────────────┐  ┌──────────┐ │
+│  │ LoginScreen │  │WidgetService│  │Notification│ │
+│  │ (Native     │  │ (RN→Kotlin) │  │ Scheduler │ │
+│  │  OAuth)     │  │             │  │           │ │
+│  └──────┬──────┘  └──────┬──────┘  └─────┬────┘ │
+├─────────┼────────────────┼───────────────┼──────┤
+│         ▼                ▼               ▼      │
+│  ┌─────────────────────────────────────────────┐│
+│  │            WebViewContainer                 ││
+│  │  (injectedJavaScriptBeforeContentLoaded)    ││
+│  └──────────────────┬──────────────────────────┘│
+└─────────────────────┼───────────────────────────┘
+                      ▼
+┌─────────────────────────────────────────────────┐
+│              기존 웹앱 (KangNaengBot-FE)          │
+│   ChatPage | ScheduleCanvas | Settings ...      │
+└─────────────────────────────────────────────────┘
+```
 
-```sh
-# Using npm
+**왜 하이브리드인가?**
+
+- ✅ 기존 웹앱 코드 100% 재활용 → 개발 비용 최소화
+- ✅ 네이티브로 해결해야 하는 문제만 선택적 구현
+- ✅ 웹앱 업데이트가 앱에 즉시 반영
+
+<br/>
+
+## 📚 프로젝트 문서 (Documentation)
+
+개발 과정, 기술적 의사결정, 배운 점 등을 상세하게 정리한 문서들입니다.
+
+- **[🚀 주요 기능 및 구현 상세 (Features)](docs/FEATURES.md)**
+  - 네이티브 OAuth, WebView 브릿지, 위젯, 푸시 알림, 백버튼 처리
+- **[⚡ 최적화 및 성능 개선 (Optimizations)](docs/OPTIMIZATIONS.md)**
+  - FOUC 방지, 토큰 사전 주입, 상태 동기화 전략
+- **[🔥 트러블 슈팅 (Challenges & Solutions)](docs/CHALLENGES_AND_SOLUTIONS.md)**
+  - 하이브리드 앱 개발 중 직면한 기술적 난관과 해결 과정
+- **[💡 회고 (Learnings)](docs/LEARNINGS.md)**
+  - 프로젝트를 통해 배우고 느낀 점
+
+### 참고 문서
+
+- [모바일 인증 API 명세 (Mobile Auth API Spec)](docs/MOBILE_AUTH_API_SPEC.md)
+- [실행 가이드 (Run Guide)](docs/RUN_GUIDE.md)
+
+---
+
+## 🛠 기술 스택 (Tech Stack)
+
+| 구분 (Category)      | 기술 (Technology)                                                                                                                                                                                     | 설명 (Description)                |
+| :------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------------------------------- |
+| **Framework**        | ![React Native](https://img.shields.io/badge/React_Native_0.79-20232A?style=flat&logo=react&logoColor=61DAFB)                                                                                         | 크로스플랫폼 앱 프레임워크        |
+| **Language**         | ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white) ![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=flat&logo=kotlin&logoColor=white) | 정적 타입 언어 + Android 네이티브 |
+| **WebView**          | ![WebView](https://img.shields.io/badge/react--native--webview-purple?style=flat)                                                                                                                     | 기존 웹앱 임베딩                  |
+| **Authentication**   | ![Google Sign-In](https://img.shields.io/badge/Google_Sign--In-4285F4?style=flat&logo=google&logoColor=white)                                                                                         | 네이티브 OAuth 2.0                |
+| **Storage**          | ![EncryptedStorage](https://img.shields.io/badge/EncryptedStorage-green?style=flat)                                                                                                                   | 보안 토큰 저장                    |
+| **Widget**           | ![AppWidget](https://img.shields.io/badge/Android_AppWidget-3DDC84?style=flat&logo=android&logoColor=white)                                                                                           | 홈 화면 시간표 위젯               |
+| **Notification**     | ![AlarmManager](https://img.shields.io/badge/AlarmManager-3DDC84?style=flat&logo=android&logoColor=white)                                                                                             | 수업 시작 알림                    |
+| **State Management** | ![Zustand](https://img.shields.io/badge/Zustand-orange?style=flat)                                                                                                                                    | 네이티브 측 상태 관리             |
+
+---
+
+## 🚀 시작하기 (Getting Started)
+
+### Prerequisites
+
+- Node.js 18+
+- JDK 17
+- Android Studio (Android SDK 34+)
+- React Native CLI
+
+### 설치 및 실행
+
+```bash
+# 의존성 설치
+npm install
+
+# Metro Bundler 시작
 npm start
 
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+# Android 앱 실행
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
+### 환경 변수 설정
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+`android/local.properties`에 다음 설정이 필요합니다:
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
+```properties
+sdk.dir=C:\\Users\\[username]\\AppData\\Local\\Android\\Sdk
 ```
 
-Then, and every time you update your native dependencies, run:
+`.env` 파일 생성 (프로젝트 루트):
 
-```sh
-bundle exec pod install
+```env
+GOOGLE_WEB_CLIENT_ID=your-google-web-client-id.apps.googleusercontent.com
+API_BASE_URL=https://your-api-url.com
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+---
 
-```sh
-# Using npm
-npm run ios
+## 📂 프로젝트 구조
 
-# OR using Yarn
-yarn ios
+```
+KangNaengBotApp/
+├── src/
+│   ├── components/       # UI 컴포넌트
+│   │   └── WebViewContainer.tsx  # 핵심: 웹앱 임베딩 및 브릿지
+│   ├── screens/          # 화면
+│   │   └── LoginScreen.tsx       # 네이티브 로그인 화면
+│   ├── services/         # 비즈니스 로직
+│   │   ├── authService.ts        # Google OAuth, 토큰 관리
+│   │   └── widgetService.ts      # 위젯 데이터 변환
+│   ├── store/            # Zustand 스토어
+│   └── types/            # TypeScript 타입 정의
+├── android/
+│   └── app/src/main/java/com/kangnaengbotapp/
+│       ├── widget/       # Kotlin 위젯 구현
+│       │   ├── ScheduleWidgetProvider.kt
+│       │   └── ScheduleRemoteViewsFactory.kt
+│       └── notification/ # 알림 스케줄러
+│           └── NotificationScheduler.kt
+├── docs/                 # 프로젝트 문서
+└── blog/                 # 블로그 포스트 원본
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+---
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## 📱 다운로드
 
-## Step 3: Modify your app
+<a href="https://play.google.com/store/apps/details?id=com.kangnaengbotapp">
+  <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" width="200"/>
+</a>
 
-Now that you have successfully run the app, let's make changes!
+---
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## 📄 관련 프로젝트
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- [KangNaengBot-FE](https://github.com/sleepyMS/KangNaengBot-FE) - 웹 프론트엔드
+- [KangNaengBot-BE](https://github.com/sleepyMS/KangNaengBot-BE) - 백엔드 서버
